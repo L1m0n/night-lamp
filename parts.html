@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Комплектуючі лампи</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:opsz,wght@6..72,400&display=swap">
+<link rel="stylesheet" href="assets/paper.css">
+<style>
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 0 0 8px; }
+  .progress { font-family: "Newsreader", Georgia, serif; font-size: 22px; }
+  .progress small { font-family: "Inter", system-ui, sans-serif; font-size: 13px; color: var(--faint); margin-left: 6px; }
+  .bar .textbtn { margin-left: auto; font-size: 13px; }
+</style>
+</head>
+<body>
+<main class="page">
+  <nav class="nav" aria-label="Розділи">
+    <a href="parts.html" aria-current="page">Комплектуючі</a>
+    <a href="parts-3d.html">Деталі 3D</a>
+    <a href="render.html">Рендер</a>
+    <a href="schematic.html">Схема</a>
+    <a href="wiring.html">Підключення</a>
+  </nav>
+
+  <p class="eyebrow">Нічна лампа · список</p>
+  <h1>Комплектуючі</h1>
+  <p class="lede">Усе, що треба для збирання: живлення, світло, керування й механіка. Позначайте, що вже є, — список запам'ятається в цьому браузері.</p>
+
+  <div class="bar">
+    <p class="progress" id="progress" aria-live="polite">0 з 0</p>
+    <div class="toggle" role="radiogroup" aria-label="Варіант">
+      <label><input type="radio" name="variant" value="all" checked><span>Усі</span></label>
+      <label><input type="radio" name="variant" value="V1"><span>V1</span></label>
+      <label><input type="radio" name="variant" value="V2"><span>V2</span></label>
+    </div>
+    <button type="button" class="textbtn" id="reset">Скинути</button>
+  </div>
+
+  <table class="tbl">
+    <thead>
+      <tr><th scope="col"><span class="sub">✓</span></th><th scope="col">Деталь</th><th scope="col">К-сть</th><th scope="col">Варіант</th><th scope="col">Де купити</th><th scope="col">Ціна</th><th scope="col">Примітка</th></tr>
+    </thead>
+  </table>
+</main>
+
+<script>
+(function () {
+  var KEY = 'lamp-parts-v1';
+  var RADIO = 'будь-який радіомагазин / Prom';
+  // [id, назва, к-сть, варіант ('' = обидва), магазин, посилання, ціна, примітка, стан ('є' | 'замовлено' | '')]
+  var GROUPS = [
+    ['Живлення', [
+      ['lipo', 'Li-Pol 850 мА·год 55×20×10', '8', '', 'вже є', '', '—', '8 комірок паралельно, ≈6800 мА·год', 'є'],
+      ['ip5306', 'Модуль павербанка IP5306, USB-C', '1', '', 'вже є', '', '—', 'зарядка ~2 А і 5 В OUT на ESP32 та стрічку', 'є'],
+      ['c1000', 'Конденсатор 1000 мкФ 10 В', '1', '', RADIO, '', '—', 'на вході стрічки, гасить кидки струму', ''],
+      ['r220k', 'Резистор 220 кОм', '2', '', RADIO, '', '—', 'дільник батареї → GPIO1, рівень заряду', ''],
+      ['ao3401', 'P-MOSFET AO3401', '1', 'V1', RADIO, '', '—', 'вмикає живлення стрічки (GPIO6), щоб IP5306 міг заснути', ''],
+      ['awg22', 'Дріт AWG22', '—', '', RADIO, '', '—', 'шини 5 В / GND через колону', '']
+    ]],
+    ['Світло', [
+      ['sk6812', 'Стрічка SK6812 RGBW 5 В, 60 LED/м, біла плата (LT SMART)', '5 м', '', 'LedConnect', 'https://ledconnect.com.ua/product/svitlodiodna-strichka-5v-lt-rgbw-smart-sk6812-smd5050-60led-18w-m-ip20-bila-plata/', '~393 ₴/м', '8 смуг × 10 LED = 80 LED (~1.35 м)', 'замовлено'],
+      ['ahct', '74AHCT1G125 (SOT-23-5 на перехіднику; або 74AHCT125 DIP)', '1', '', RADIO, '', '—', 'зсув рівня 3.3 → 5 В для даних стрічки', ''],
+      ['r330', 'Резистор 330 Ом', '1', '', RADIO, '', '—', 'дані на стрічку через 330 Ом', '']
+    ]],
+    ['Керування', [
+      ['esp32', 'ESP32-C3 SuperMini', '1', '', 'menstudio', 'https://menstudio.kyiv.ua/ua/p2681772438-esp32-supermini-kompaktnaya.html', '170 ₴', 'мозок лампи: Wi-Fi, ефекти, читає ручку', ''],
+      ['b100k', 'Потенціометр B100K (з плати ZX-017)', '1', 'V1', 'вже є', '', '—', 'ручка яскравості → GPIO0', 'є'],
+      ['rk097', 'Потенціометр RK097NS 10K, 5 виводів, з вимикачем', '1', 'V2', 'Prom', 'https://prom.ua/ua/p3201366984-rezistor-peremennyj-rk097ns.html', '76 ₴', 'ручка яскравості + «клац» вимикає 5 В', 'замовлено'],
+      ['kfc', 'Кнопка KFC-003A SMD 6×3×2.5', '1', 'V1', RADIO, '', '—', 'натиск дімера → KEY на IP5306, увімкнення', ''],
+      ['n7002', 'N-MOSFET 2N7002', '1', 'V1', RADIO, '', '—', 'ESP32 «натискає» KEY (GPIO7), щоб вимкнути IP5306', ''],
+      ['r10k', 'Резистор 10 кОм', '2', 'V1', RADIO, '', '—', 'підтяжки затворів AO3401 і 2N7002', ''],
+      ['c100n', 'Конденсатор 100 нФ', '2', '', RADIO, '', '—', 'фільтр повзунка на GPIO0 і живлення 74AHCT', ''],
+      ['perf', 'Макетна плата 30×40', '1', '', RADIO, '', '—', 'перехідник: ESP32, зсув рівня, дільник', ''],
+      ['awg28', 'Дріт AWG28', '—', '', RADIO, '', '—', 'сигнальні дроти', '']
+    ]],
+    ['Механіка й кріплення', [
+      ['m3', 'Гвинти M3', 'набір', '', RADIO, '', '—', 'збирання корпусу', ''],
+      ['m2', 'Гвинти M2', 'набір', '', RADIO, '', '—', 'плата й дрібні деталі', ''],
+      ['concrete', 'Білий цемент / архітектурний бетон', '—', '', 'будівельний магазин', '', '—', 'важка шайба-основа', ''],
+      ['silicone', 'Силікон для форм', '—', '', 'магазин для творчості', '', '—', 'форма для відливання шайби', ''],
+      ['cork', 'Корок 1 мм, лист', '1', '', 'будь-який магазин / Prom', '', '—', 'підкладка під шайбу, щоб не ковзала', ''],
+      ['plaw', 'PLA білий', '—', '', 'будь-який магазин / Prom', '', '—', 'плафон, колона, рефлектор', ''],
+      ['plap', 'PLA / PETG пастельний', '—', '', 'будь-який магазин / Prom', '', '—', 'дімер і чаша', '']
+    ]]
+  ];
+
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { saved = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} }
+
+  function el(tag, attrs, text) {
+    var n = document.createElement(tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  var table = document.querySelector('.tbl');
+  var boxes = [];
+  GROUPS.forEach(function (g) {
+    var tb = el('tbody');
+    var gr = el('tr', { 'class': 'grp' });
+    gr.appendChild(el('th', { scope: 'colgroup', colspan: '7' }, g[0]));
+    tb.appendChild(gr);
+    g[1].forEach(function (r) {
+      var id = r[0], tr = el('tr');
+      tr.dataset.variant = r[3];
+      var ck = el('input', { type: 'checkbox', 'class': 'ck', id: 'ck-' + id });
+      ck.dataset.def = r[8] ? '1' : '';
+      ck.checked = id in saved ? !!saved[id] : !!r[8];
+      ck.addEventListener('change', function () { saved[id] = ck.checked; save(); update(); });
+      boxes.push(ck);
+      var c0 = el('td', { 'class': 'c-ck' }); c0.appendChild(ck); tr.appendChild(c0);
+
+      var name = el('td', {});
+      name.appendChild(el('label', { 'for': 'ck-' + id, id: 'n-' + id }, r[1]));
+      if (r[8]) name.appendChild(el('span', { 'class': 'pill' }, r[8]));
+      tr.appendChild(name);
+      tr.appendChild(el('td', { 'class': 'num', 'data-label': 'к-сть' }, r[2]));
+      tr.appendChild(el('td', { 'class': 'sub', 'data-label': 'варіант' }, r[3] || 'обидва'));
+      var shop = el('td', { 'data-label': 'де' });
+      if (r[5]) shop.appendChild(el('a', { href: r[5], target: '_blank', rel: 'noopener' }, r[4]));
+      else shop.textContent = r[4];
+      tr.appendChild(shop);
+      tr.appendChild(el('td', { 'class': 'num', 'data-label': 'ціна' }, r[6]));
+      tr.appendChild(el('td', { 'class': 'note' }, r[7]));
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+  });
+
+  var progress = document.getElementById('progress');
+  function update() {
+    var v = document.querySelector('input[name="variant"]:checked').value, n = 0, m = 0;
+    boxes.forEach(function (ck) {
+      var tr = ck.closest('tr'), rv = tr.dataset.variant;
+      tr.hidden = v !== 'all' && rv !== '' && rv !== v;
+      if (!tr.hidden) { m++; if (ck.checked) n++; }
+    });
+    progress.innerHTML = '';
+    progress.append(n + ' з ' + m, el('small', {}, 'позначено'));
+  }
+  document.querySelectorAll('input[name="variant"]').forEach(function (r) { r.addEventListener('change', update); });
+  document.getElementById('reset').addEventListener('click', function () {
+    saved = {};
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    boxes.forEach(function (ck) { ck.checked = !!ck.dataset.def; });
+    update();
+  });
+  update();
+})();
+</script>
+</body>
+</html>
