@@ -46,7 +46,7 @@
   </div>
 
   <div class="stage" id="stage"></div>
-  <p class="notes"><span id="vnote">V2: RK097NS з вимикачем, кришка колони.</span><span>Тягніть — обертати, колесо — масштаб. Висота лампи ≈ 175 мм.</span></p>
+  <p class="notes"><span id="vnote">V2: RK097NS з вимикачем, гільза в колоні.</span><span>Тягніть — обертати, колесо — масштаб. Висота лампи ≈ 175 мм.</span></p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
@@ -154,7 +154,7 @@
     for (var n in VARIANT) meshes[n].forEach(function (m) { m.visible = VARIANT[n] === id; });
     document.getElementById('vnote').textContent = id === 'V1'
       ? 'V1: B100K на каретці з напрямною, натиск дімера вмикає IP5306.'
-      : 'V2: RK097NS з вимикачем, кришка колони.';
+      : 'V2: RK097NS з вимикачем, гільза в колоні.';
   }
   document.querySelectorAll('input[name="light"]').forEach(function (r) {
     r.addEventListener('change', function () { target.glow = r.value === 'on' ? 1 : 0; });

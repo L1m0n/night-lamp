@@ -72,7 +72,8 @@ refl = [103, 1.2];           // білий відбивач
 
 /* [Колона] */
 col_face = 12.5;   // грань восьмигранника
-col_top  = 159.44;
+col_top  = plate_z[0] - 0.5;   // до самої пластини плафона: вузол дімера з кнопкою всередині колони
+key      = [1.5, 2.5];        // ребро в порожнині (від повороту вкладиша) і полички під вкладиш: радіально, по дузі
 col_bore = 22;
 slot     = [6, 6];   // паз на нижньому торці: шини й дані з шасі в колону
 strip_z0  = 42.8;             // низ смуги (кінець з падами); нижні отвори під відбивачем, перший LED над ним
@@ -144,7 +145,8 @@ v1_bush   = pot1_face + pot1_bush;
 node_top  = max(v1_bush, bush_top);
 strip_z1  = strip_z0 + strip_len;
 wire_z    = [strip_z0 - wire_gap - wire_d / 2, strip_z1 + wire_gap + wire_d / 2];  // центри отворів
-node_z0   = min(guide_z0, col_top - 5);   // нижче — порожнина колони вільна (напрямна V1, хвостовик кришки V2)
+node_z0   = guide_z0;                     // вкладиш вузла дімера (V1 і V2) стоїть на поличках колони на цій висоті
+guide_top = pot1_face + 2;
 
 echo(str("Внутрішній радіус чаші: z=27 → ", in_r(27), ", z=", bat_top, " → ", in_r(bat_top)));
 echo(str("Вал у хвостовику: V1 ", pot1_face + pot1_shaft - boss[1], ", V2 ", pot2_face + pot2_shaft - boss[1]));
@@ -153,7 +155,8 @@ assert(bat_corner + 0.5 < pocket_r, "акумулятори впираються
 assert(norm([-esp_x + esp.z / 2 + 3, esp.x / 2]) < pocket_r, "ESP32 з деталями впирається в чашу");
 assert(sleeve_r - lap_t > bat_corner + 0.5, "манжета плафона зачіпає акумулятори");
 assert(top_z - (cut_z - lap) <= 180 && cut_z - ring_z <= 180, "деталь шейдера вища за стіл принтера");
-assert(node_top < plate_z[0] - 0.5, "колона з вузлом дімера впирається в пластину плафона");
+assert(node_top < col_top && col_top < plate_z[0] - 0.3, "вузол дімера має бути в колоні, а колона — під пластиною");
+assert(boss[0] + 0.4 < col_bore / 2 - key[0], "хвостовик дімера зачіпає ребро в колоні");
 assert(pot1_face + pot1_shaft - boss[1] >= 6, "вал V1 заходить у хвостовик дімера менше ніж на 6 мм");
 assert(pot2_face + pot2_shaft - boss[1] >= 6, "вал V2 заходить у хвостовик дімера менше ніж на 6 мм");
 assert(boss[1] + shaft_hole > max(pot1_face + pot1_shaft, pot2_face + pot2_shaft) + 0.5, "вал упирається в дно отвору дімера");
@@ -294,31 +297,31 @@ module column() {
     rotate(180) translate([col_flat - 5, -slot.x / 2, deck_z - 1]) cube([10, slot.x, slot.y + 1]);  // у жолоб шасі, бік ESP32
     for (a = [0:45:315], z = wire_z) rotate(a) translate([col_flat - 5, 0, z]) rotate([0, 90, 0]) cylinder(d = wire_d, h = 10, $fn = 24);
   }
+  for (a = [22.5, 142.5, 262.5]) rotate(a) translate([col_bore / 2 - key[0], -1.5, node_z0 - 2]) cube([key[0] + 0.5, 3, 2]);  // полички між отворами під дроти
+  rotate(22.5) translate([col_bore / 2 - key[0], -key[1] / 2, node_z0]) cube([key[0] + 0.5, key[1], col_top - node_z0]);   // ребро
 }
 
+module key_slot() { rotate(22.5) translate([col_bore / 2 - key[0] - fit - 0.5, -key[1] / 2 - fit, node_z0 - 1]) cube([5, key[1] + 2 * fit, 40]); }
+
 // --- вузол дімера V2: кришка колони під RK097NS ---
-module knob_v2_cap() {
+module knob_v2_cap() {  // гільза в колоні: стоїть на поличках, RK097NS — гайкою на верхній стінці, корпус звисає всередину
   difference() {
-    union() {
-      translate([0, 0, col_top]) cylinder(d = 2 * col_flat, h = pot2_face + 2 - col_top);   // лежить на торці колони
-      translate([0, 0, col_top - 5]) cylinder(d = col_bore - 2 * fit, h = 5.01);              // хвостовик у порожнину
-    }
-    translate([0, 0, col_top - 6]) cylinder(d = col_bore - 2 * fit - 2 * guide_wall, h = pot2_face - col_top + 6);  // під корпус
+    translate([0, 0, node_z0]) cylinder(d = col_bore - 2 * fit, h = pot2_face + 2 - node_z0);
+    translate([0, 0, node_z0 - 1]) cylinder(d = col_bore - 2 * fit - 2 * guide_wall, h = pot2_face - node_z0 + 1);  // під корпус і дроти
     translate([0, 0, pot2_face - 1]) cylinder(d = bush_hole, h = 10, $fn = 48);
+    key_slot();
   }
 }
 
 // --- вузол дімера V1: напрямна в колоні і каретка з B100K, під нею KFC-003A ---
 module knob_v1_guide() {
   difference() {
-    union() {
-      translate([0, 0, guide_z0]) cylinder(d = col_bore - 2 * fit, h = col_top - guide_z0);
-      translate([0, 0, col_top]) cylinder(d = 2 * col_flat, h = 1.5);
-    }
+    translate([0, 0, guide_z0]) cylinder(d = col_bore - 2 * fit, h = guide_top - guide_z0);
     translate([0, 0, sb_base]) cylinder(d = bore, h = 50);
     translate([0, -bore / 2 + 3, guide_z0 - 1]) cylinder(d = 4, h = 5, $fn = 32);                            // дроти вниз
+    key_slot();
   }
-  translate([bore / 2 - 0.7, -1, sb_base]) cube([1.5, 2, col_top + 1.5 - sb_base]);                          // ребро від провертання
+  translate([bore / 2 - 0.7, -1, sb_base]) cube([1.5, 2, guide_top - sb_base]);                          // ребро від провертання
   for (s = [-1, 1]) translate([s * (sb.x / 2 + 2.5), 0, sb_base]) cylinder(d = 2.5, h = sb.z - v1_travel, $fn = 24);  // упори ходу
 }
 
