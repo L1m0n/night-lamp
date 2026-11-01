@@ -6,7 +6,7 @@
 // (лампа на 10 мм над столом). STL складаються у збірку без зсувів; друкувати — повернувши в слайсері.
 // Розміри в мм. Значення з позначкою «заміряти» — номінальні, звір зі своїми деталями.
 //
-// Вигляд згори: +X — USB-C у боці шайби і плата-перехідник на шасі, +Y — ESP32.
+// Вигляд згори: +X — USB-C у боці шайби, +Y — ESP32 і жолоб під дроти з колони.
 
 part    = "assembly";  // shade_top, bowl, puck, puck_core, chassis, reflector, column, knob_v1_carriage,
                        // knob_v1_guide, knob_v2_cap, dimmer, batteries, pcb, pot_v1, pot_v2, assembly, section
@@ -60,9 +60,8 @@ cell        = [55, 20, 10];  // Li-Pol 850 мА·год
 bat_tol     = 0.5;
 pocket_wall = [1.2, 5];      // стінка навколо вітряка: товщина, висота
 esp  = [22.5, 18, 1.2];      // ESP32-C3 SuperMini — заміряти
-perf = [30, 40];             // макетка-перехідник
 rail = [1.2, 3];             // напрямні під плати: товщина, висота
-groove = [6, 1.5];           // жолоб під дроти з колони до перехідника (під акумуляторами)
+groove = [6, 1.5];           // жолоб під дроти з колони до ESP32 (під акумуляторами)
 cup_depth = 8;
 cup_wall  = 2;
 col_fit   = 0.2;
@@ -253,7 +252,6 @@ module rails(size, pos) {  // дві напрямні вздовж довгих 
 }
 
 esp_pos  = [0, (cell.x + cell.y) / 2 + bat_tol + pocket_wall[0] + 1 + esp.y / 2];
-perf_pos = [(cell.x + cell.y) / 2 + bat_tol + pocket_wall[0] + 0.5 + perf.x / 2, 0];
 
 module chassis() {
   sq = cell.x + cell.y + 2 * bat_tol;
@@ -263,10 +261,9 @@ module chassis() {
       translate([0, 0, deck_z]) linear_extrude(pocket_wall[1]) difference() { square(sq + 2 * pocket_wall[0], center = true); square(sq, center = true); }
       translate([0, 0, deck_z]) linear_extrude(cup_depth) difference() { octagon(col_flat + col_fit + cup_wall); octagon(col_flat + col_fit); }
       rotate(90) rails([esp.y, esp.x], [esp_pos.y, 0]);
-      rails([perf.x, perf.y], perf_pos);
     }
     translate([chan_x, 0, chassis_z - 1]) cylinder(d = chan_d, h = chassis_t + 2, $fn = 48);
-    translate([0, -groove.x / 2, deck_z - groove.y]) cube([perf_pos.x - perf.x / 2 + 3, groove.x, groove.y + 0.01]);
+    rotate(90) translate([0, -groove.x / 2, deck_z - groove.y]) cube([esp_pos.y - esp.y / 2 + 3, groove.x, groove.y + 0.01]);  // до ESP32
   }
 }
 
@@ -279,7 +276,7 @@ module column() {
   difference() {
     translate([0, 0, deck_z]) linear_extrude(col_top - deck_z) octagon(col_flat);
     translate([0, 0, deck_z - 1]) cylinder(d = col_bore, h = col_top - deck_z + 2);
-    translate([col_flat - 5, -slot.x / 2, deck_z - 1]) cube([10, slot.x, slot.y + 1]);  // у жолоб шасі
+    rotate(90) translate([col_flat - 5, -slot.x / 2, deck_z - 1]) cube([10, slot.x, slot.y + 1]);  // у жолоб шасі, бік ESP32
     for (a = [0:45:315], z = wire_z) rotate(a) translate([col_flat - 5, 0, z]) rotate([0, 90, 0]) cylinder(d = wire_d, h = 10, $fn = 24);
   }
 }
@@ -340,7 +337,6 @@ module pcb() {
   translate([pm_x1 - ip5306.y, -ip5306.x / 2, pm_top - ip5306.z]) cube(ip5306);                       // IP5306 компонентами донизу
   translate([sock_front - usb_sock.x, -usb_sock.y / 2, usb_z - usb_sock.z / 2]) cube(usb_sock);       // гніздо USB-C
   translate([esp_pos.x - esp.x / 2, esp_pos.y - esp.y / 2, deck_z + 1]) cube(esp);
-  translate([perf_pos.x - perf.x / 2, perf_pos.y - perf.y / 2, deck_z + 1]) cube([perf.x, perf.y, 1.6]);
 }
 
 module pot_v1() {

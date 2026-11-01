@@ -61,7 +61,7 @@
 
   <p class="eyebrow">Нічна лампа · електроніка</p>
   <h1>Схема</h1>
-  <p class="lede">Акумулятори → IP5306 → 5 В на ESP32-C3 і стрічку SK6812. Перемкніть варіант дімера: V1 — B100K з кнопкою й MOSFET-ами, V2 — RK097NS з вимикачем у ручці.</p>
+  <p class="lede">Акумулятори → IP5306 → 5 В на ESP32-C3 і стрічку SK6812. Перемкніть варіант дімера: V1 — B100K і кнопка в дімері, V2 — RK097NS з вимикачем у ручці.</p>
 
   <div class="bar">
     <div class="toggle" role="radiogroup" aria-label="Варіант">
@@ -107,56 +107,24 @@
     <text class="ref mid" x="310" y="118">U1</text>
     <text class="mid" x="310" y="133">IP5306</text>
     <text class="pn mid" x="310" y="147">USB-C · заряд 2 А</text>
-    <g data-variant="v1">
-      <line class="s" data-pin="U1.KEY" x1="310" y1="190" x2="310" y2="212"/>
-      <text class="net mid" x="310" y="226">KEY</text>
-    </g>
-
     <path class="w" d="M400 90H570"/>
     <text class="pnet" x="412" y="83">5V_OUT</text>
 
-    <!-- ── V1: ключ стрічки Q1 (AO3401) з драйвером Q2 ── -->
-    <text class="pn mid" data-variant="v1" x="600" y="56">V1 · ключ живлення стрічки</text>
-    <g data-variant="v1" transform="translate(60 0)">
-      <circle class="dot" cx="490" cy="90" r="2.5"/>
-      <line class="w" data-pin="R4.1" x1="490" y1="90" x2="490" y2="104"/>
-      <rect class="b" x="485" y="104" width="10" height="24"/>
-      <line class="s" data-pin="R4.2" x1="490" y1="128" x2="490" y2="142"/>
-      <text class="ref end" x="480" y="116">R4</text>
-      <text class="end" x="480" y="129">10k</text>
-
-      <path class="b" stroke-width="2" d="M525 100h7M536 100h8M548 100h7"/>
-      <path class="b" d="M525 107h30"/>
-      <polyline class="w" data-pin="Q1.S" points="530,100 530,90 510,90"/>
-      <polyline class="w" data-pin="Q1.D" points="550,100 550,90 570,90"/>
-      <polyline class="b" points="540,100 540,94 530,94"/>
-      <polygon class="tipk" points="540,94.5 537.5,99 542.5,99"/>
-      <line class="s" data-pin="Q1.G" x1="540" y1="107" x2="540" y2="128"/>
-      <text class="ref" x="562" y="122">Q1</text>
-      <text x="562" y="135">AO3401</text>
-
-      <path class="s" d="M540 128v14M490 142H558"/>
-      <circle class="dot s" cx="540" cy="142" r="2.5"/>
-      <polyline class="s" data-pin="Q2.D" points="558,142 558,160 549,160"/>
-      <path class="b" stroke-width="2" d="M549 156v7M549 168v8M549 181v7"/>
-      <path class="b" d="M543 158v28"/>
-      <polyline class="b" points="549,172 558,172 558,184"/>
-      <polygon class="tipk" points="550,172 555,169.5 555,174.5"/>
-      <polyline class="s" data-pin="Q2.G" points="543,172 525,172"/>
-      <polyline class="w" data-pin="Q2.S" points="549,184 558,184 558,204"/>
-      <use href="#gnd" x="558" y="204"/>
-      <text class="ref" x="566" y="170">Q2</text>
-      <text x="566" y="183">2N7002</text>
-
-      <path class="s" d="M525 172H460"/>
-      <circle class="dot s" cx="510" cy="172" r="2.5"/>
-      <line class="s" data-pin="R5.1" x1="510" y1="172" x2="510" y2="184"/>
-      <rect class="b" x="505" y="184" width="10" height="24"/>
-      <line class="w" data-pin="R5.2" x1="510" y1="208" x2="510" y2="220"/>
-      <use href="#gnd" x="510" y="220"/>
-      <text class="ref end" x="500" y="196">R5</text>
-      <text class="end" x="500" y="209">10k</text>
-      <text class="net end" x="456" y="176">LED_PWR</text>
+    <!-- ── V1: кнопка дімера SW1 замикає KEY на землю ── -->
+    <g data-variant="v1">
+      <line class="w" x1="570" y1="90" x2="630" y2="90"/>
+      <line class="s" data-pin="U1.KEY" x1="310" y1="190" x2="310" y2="206"/>
+      <path class="s" d="M310 206H160"/>
+      <text class="net" x="236" y="200">KEY</text>
+      <line class="s" data-pin="SW1.1" x1="160" y1="206" x2="160" y2="216"/>
+      <circle class="b" cx="160" cy="218" r="2"/>
+      <circle class="b" cx="160" cy="240" r="2"/>
+      <path class="b" d="M150 212v34M138 229h12"/>
+      <line class="w" data-pin="SW1.2" x1="160" y1="242" x2="160" y2="256"/>
+      <use href="#gnd" x="160" y="256"/>
+      <text class="ref" x="172" y="226">SW1</text>
+      <text x="172" y="240">KFC-003A</text>
+      <text class="pn" x="172" y="254">натиск дімера</text>
     </g>
 
     <!-- ── V2: вимикач у потенціометрі RV2 ── -->
@@ -171,22 +139,12 @@
       <text class="pn mid" x="622" y="104">S2</text>
       <text class="ref mid" x="600" y="124">RV2 · вимикач</text>
       <text class="mid" x="600" y="138">«клац» ручки</text>
+      <text class="pnet" x="650" y="83">5V_SW</text>
     </g>
 
-    <!-- ── 5 В на стрічку, C1, LED1 ── -->
+    <!-- ── 5 В на стрічку, LED1 ── -->
     <path class="w" d="M630 90H860"/>
-    <text class="pnet" data-variant="v1" x="650" y="83">LED_5V</text>
-    <text class="pnet" data-variant="v2" x="650" y="83">5V_SW</text>
     <text class="pn" x="706" y="83">до 1.5 А · AWG22</text>
-    <circle class="dot" cx="820" cy="90" r="2.5"/>
-    <line class="w" data-pin="C1.1" x1="820" y1="90" x2="820" y2="112"/>
-    <path class="b" d="M808 112h24M808 121q12 -6 24 0"/>
-    <line class="w" data-pin="C1.2" x1="820" y1="118" x2="820" y2="140"/>
-    <use href="#gnd" x="820" y="140"/>
-    <text class="pn" x="836" y="110">+</text>
-    <text class="ref end" x="802" y="113">C1</text>
-    <text class="end" x="802" y="126">1000 мкФ</text>
-    <text class="pn end" x="802" y="139">10 В</text>
 
     <rect class="b" x="880" y="70" width="160" height="290"/>
     <line class="w" data-pin="LED1.5V" x1="860" y1="90" x2="880" y2="90"/>
@@ -205,7 +163,7 @@
       <rect x="955" y="230" width="12" height="12"/><rect x="980" y="230" width="12" height="12"/><rect x="1005" y="230" width="12" height="12"/>
     </g>
 
-    <!-- ── Дільник батареї R2/R3 → GPIO1 ── -->
+    <!-- ── Дільник батареї R2/R3 → GPIO1, прямо на пінах ESP32 ── -->
     <use href="#pwr" x="300" y="290"/>
     <text class="pnet mid" x="300" y="274">BAT+</text>
     <line class="w" data-pin="R2.1" x1="300" y1="290" x2="300" y2="304"/>
@@ -222,13 +180,6 @@
     <text class="end" x="290" y="413">220k</text>
     <path class="s" d="M300 360H380"/>
     <text class="net" x="308" y="353">VBAT_SENSE</text>
-    <circle class="dot s" cx="340" cy="360" r="2.5"/>
-    <line class="s" data-pin="C4.1" x1="340" y1="360" x2="340" y2="392"/>
-    <path class="b" d="M328 392h24M328 398h24"/>
-    <line class="w" data-pin="C4.2" x1="340" y1="398" x2="340" y2="412"/>
-    <use href="#gnd" x="340" y="412"/>
-    <text class="ref" x="356" y="396">C4</text>
-    <text x="356" y="409">100 нФ</text>
 
     <!-- ── U2: ESP32-C3 SuperMini ── -->
     <rect class="b" x="400" y="280" width="180" height="220"/>
@@ -238,13 +189,6 @@
     <text class="pnet mid" data-variant="v2" x="360" y="284">5V_SW</text>
     <line class="s" data-pin="U2.GPIO1" x1="380" y1="360" x2="400" y2="360"/>
     <line class="s" data-pin="U2.GPIO10" x1="580" y1="330" x2="600" y2="330"/>
-    <path class="s" d="M600 330H660"/>
-    <g data-variant="v1">
-      <line class="s" data-pin="U2.GPIO6" x1="580" y1="390" x2="600" y2="390"/>
-      <text class="net" x="606" y="394">LED_PWR</text>
-      <line class="s" data-pin="U2.GPIO7" x1="580" y1="430" x2="600" y2="430"/>
-      <text class="net" x="606" y="434">KEY_DRV</text>
-    </g>
     <line class="w" data-pin="U2.3V3" x1="430" y1="500" x2="430" y2="520"/>
     <line class="s" data-pin="U2.GPIO0" x1="480" y1="500" x2="480" y2="520"/>
     <line class="w" data-pin="U2.GND" x1="550" y1="500" x2="550" y2="520"/>
@@ -252,8 +196,6 @@
     <text class="pn" x="406" y="304">5V</text>
     <text class="pn" x="406" y="364">GPIO1</text>
     <text class="pn end" x="574" y="334">GPIO10</text>
-    <text class="pn end" x="574" y="394">GPIO6</text>
-    <text class="pn end" x="574" y="434">GPIO7</text>
     <text class="pn mid" x="430" y="494">3V3</text>
     <text class="pn mid" x="480" y="494">GPIO0</text>
     <text class="pn mid" x="550" y="494">GND</text>
@@ -261,47 +203,20 @@
     <text class="mid" x="490" y="392">ESP32-C3</text>
     <text class="pn mid" x="490" y="406">SuperMini</text>
 
-    <!-- ── U3: зсув рівня, C3, R1 → DIN ── -->
-    <rect class="b" x="680" y="300" width="100" height="80"/>
-    <line class="s" data-pin="U3.A" x1="660" y1="330" x2="680" y2="330"/>
-    <line class="s" data-pin="U3.Y" x1="780" y1="330" x2="796" y2="330"/>
-    <line class="w" data-pin="U3.VCC" x1="730" y1="280" x2="730" y2="300"/>
-    <line class="w" data-pin="U3.GND" x1="710" y1="380" x2="710" y2="396"/>
-    <line class="w" data-pin="U3.OE" x1="750" y1="380" x2="750" y2="396"/>
-    <path class="w" d="M710 396H750"/>
-    <circle class="dot" cx="730" cy="396" r="2.5"/>
-    <use href="#gnd" x="730" y="396"/>
-    <text class="pn" x="686" y="334">A</text>
-    <text class="pn end" x="774" y="334">Y</text>
-    <text class="pn mid" x="730" y="313">VCC</text>
-    <text class="pn mid" x="710" y="374">GND</text>
-    <text class="pn mid" x="750" y="374" text-decoration="overline">OE</text>
-    <text class="ref mid" x="730" y="336">U3</text>
-    <text class="mid" x="730" y="351">74AHCT1G125</text>
+    <!-- ── Дані: GPIO10 → R1 (у дроті біля стрічки) → DIN ── -->
+    <path class="s" d="M600 330H770"/>
+    <text class="net" x="612" y="323">DATA · 3.3 В</text>
+    <line class="s" data-pin="R1.1" x1="770" y1="330" x2="780" y2="330"/>
+    <rect class="b" x="780" y="325" width="28" height="10"/>
+    <line class="s" data-pin="R1.2" x1="808" y1="330" x2="860" y2="330"/>
+    <text class="ref mid" x="794" y="318">R1</text>
+    <text class="mid" x="794" y="350">330 Ом</text>
+    <text class="pn mid" x="794" y="364">у дроті біля DIN</text>
 
-    <path class="w" d="M730 280V262H650"/>
-    <circle class="dot" cx="730" cy="262" r="2.5"/>
-    <use href="#pwr" x="730" y="262"/>
-    <text class="pnet mid" data-variant="v1" x="730" y="246">5V_OUT</text>
-    <text class="pnet mid" data-variant="v2" x="730" y="246">5V_SW</text>
-    <line class="w" data-pin="C3.1" x1="650" y1="262" x2="650" y2="276"/>
-    <path class="b" d="M638 276h24M638 282h24"/>
-    <line class="w" data-pin="C3.2" x1="650" y1="282" x2="650" y2="296"/>
-    <use href="#gnd" x="650" y="296"/>
-    <text class="ref end" x="632" y="280">C3</text>
-    <text class="end" x="632" y="293">100 нФ</text>
-
-    <line class="s" data-pin="R1.1" x1="796" y1="330" x2="812" y2="330"/>
-    <rect class="b" x="812" y="325" width="28" height="10"/>
-    <line class="s" data-pin="R1.2" x1="840" y1="330" x2="860" y2="330"/>
-    <text class="ref mid" x="826" y="318">R1</text>
-    <text class="mid" x="826" y="350">330 Ом</text>
-
-    <!-- ── Ручка: RV1 (V1) / RV2 (V2), C2 → GPIO0 ── -->
+    <!-- ── Ручка: RV1 (V1) / RV2 (V2) → GPIO0 ── -->
     <path class="w" d="M430 520V560H380"/>
     <text class="pnet mid" x="405" y="553">3V3</text>
     <path class="s" d="M480 520V620H410"/>
-    <circle class="dot s" cx="480" cy="620" r="2.5"/>
     <text class="net mid" x="445" y="613">POT_W</text>
     <g data-variant="v1">
       <line class="w" data-pin="RV1.3" x1="380" y1="560" x2="380" y2="596"/>
@@ -323,52 +238,6 @@
     <text class="pn end" x="374" y="582">3</text>
     <text class="pn mid" x="400" y="634">2</text>
     <text class="pn end" x="374" y="662">1</text>
-
-    <line class="s" data-pin="C2.1" x1="480" y1="620" x2="480" y2="640"/>
-    <path class="b" d="M468 640h24M468 646h24"/>
-    <line class="w" data-pin="C2.2" x1="480" y1="646" x2="480" y2="664"/>
-    <use href="#gnd" x="480" y="664"/>
-    <text class="ref" x="498" y="644">C2</text>
-    <text x="498" y="657">100 нФ</text>
-
-    <!-- ── V1: кнопка дімера SW1 і Q3 «натискає» KEY ── -->
-    <g data-variant="v1">
-      <text class="pn" x="20" y="548">V1 · кнопка дімера й вимкнення IP5306</text>
-      <text class="net end" x="96" y="584">KEY</text>
-      <path class="s" d="M100 580H250"/>
-      <circle class="dot s" cx="130" cy="580" r="2.5"/>
-      <g transform="translate(-428 438)">
-        <polyline class="s" data-pin="Q3.D" points="558,142 558,160 549,160"/>
-        <path class="b" stroke-width="2" d="M549 156v7M549 168v8M549 181v7"/>
-        <path class="b" d="M543 158v28"/>
-        <polyline class="b" points="549,172 558,172 558,184"/>
-        <polygon class="tipk" points="550,172 555,169.5 555,174.5"/>
-        <polyline class="s" data-pin="Q3.G" points="543,172 525,172"/>
-        <polyline class="w" data-pin="Q3.S" points="549,184 558,184 558,204"/>
-        <use href="#gnd" x="558" y="204"/>
-        <text class="ref" x="566" y="170">Q3</text>
-        <text x="566" y="183">2N7002</text>
-      </g>
-      <path class="s" d="M97 610H56"/>
-      <text class="net end" x="52" y="614">KEY_DRV</text>
-      <circle class="dot s" cx="80" cy="610" r="2.5"/>
-      <line class="s" data-pin="R6.1" x1="80" y1="610" x2="80" y2="622"/>
-      <rect class="b" x="75" y="622" width="10" height="24"/>
-      <line class="w" data-pin="R6.2" x1="80" y1="646" x2="80" y2="658"/>
-      <use href="#gnd" x="80" y="658"/>
-      <text class="ref end" x="70" y="634">R6</text>
-      <text class="end" x="70" y="647">10k</text>
-
-      <line class="s" data-pin="SW1.1" x1="250" y1="580" x2="250" y2="602"/>
-      <circle class="b" cx="250" cy="604" r="2"/>
-      <circle class="b" cx="250" cy="626" r="2"/>
-      <path class="b" d="M240 598v34M228 615h12"/>
-      <line class="w" data-pin="SW1.2" x1="250" y1="628" x2="250" y2="650"/>
-      <use href="#gnd" x="250" y="650"/>
-      <text class="ref" x="262" y="612">SW1</text>
-      <text x="262" y="626">KFC-003A</text>
-      <text class="pn" x="262" y="640">натиск дімера</text>
-    </g>
   </svg>
   </div>
   <p class="hint">Схему можна гортати вбік.</p>
@@ -377,15 +246,16 @@
   <section class="how">
     <h2>Як це працює</h2>
     <div data-variant="v1">
-      <p><strong>Увімкнення.</strong> Натиск на дімер тисне кнопку SW1 — вона замикає KEY на землю, і IP5306 вмикає 5 В. ESP32 стартує й одразу відкриває ключ стрічки: GPIO6 → Q2 тягне затвор Q1 (AO3401) униз, і 5 В іде на LED_5V.</p>
-      <p><strong>Вимкнення.</strong> Ручка на мінімумі — ESP32 гасить стрічку, GPIO6 закриває Q1 (R4 підтягує затвор до 5 В), а GPIO7 через Q3 двічі «тисне» KEY — IP5306 вимикається. Якщо це не спрацює, а ESP32 після цього піде в deep sleep, IP5306 засне сам приблизно за 32 с. Прошивка спершу ставить GPIO10 у 0, потім гасить LED_PWR — інакше стрічка підживлюється через DIN.</p>
-      <p class="note">Q2 потрібен, бо 3.3 В з GPIO не закриють P-MOSFET, що стоїть на 5 В. R5 і R6 тримають затвори Q2/Q3 закритими, поки ESP32 не стартував.</p>
+      <p><strong>Увімкнення.</strong> Натиск на дімер тисне кнопку SW1: вона замикає KEY на землю, і IP5306 вмикає 5 В. ESP32 стартує і запалює стрічку.</p>
+      <p><strong>Вимкнення.</strong> Два натискання дімера за секунду — IP5306 вимикає 5 В сам, без участі ESP32. Ручка на мінімумі лише гасить світло.</p>
+      <p class="note">Якщо забути вимкнути, лампа з погашеною стрічкою тягне приблизно 0.1–0.15 А і посадить акумулятор за 2–3 доби: IP5306 не засинає, поки навантаження більше ~50 мА.</p>
     </div>
     <div data-variant="v2">
-      <p><strong>Увімкнення й вимкнення.</strong> Вимикач у потенціометрі RV2 стоїть між 5V_OUT і рештою схеми: поворот зі «клацом» замикає S1–S2, і 5 В (5V_SW) іде на ESP32, 74AHCT і стрічку. «Клац» назад рве 5 В — усе гасне, IP5306 засинає сам.</p>
-      <p class="note">MOSFET-ів і кнопки немає, KEY на IP5306 не підключено. IP5306 має сам прокинутися, коли знову з'являється навантаження, — це перевіряється на столі.</p>
+      <p><strong>Увімкнення й вимкнення.</strong> Вимикач у потенціометрі RV2 стоїть між 5V_OUT і рештою схеми: поворот зі «клацом» замикає S1–S2, і 5 В (5V_SW) іде на ESP32 і стрічку. «Клац» назад рве 5 В — усе гасне, IP5306 засинає сам.</p>
+      <p class="note">KEY на IP5306 не підключено. IP5306 має сам прокинутися, коли знову з'являється навантаження, — це перевіряється на столі.</p>
     </div>
-    <p class="note">Спільне: GPIO10 → 74AHCT1G125 (3.3 → 5 В) → 330 Ом → DIN, біля входу стрічки 1000 мкФ. Ручка — між 3V3 і GND, повзунок через 100 нФ на землю → GPIO0. Дільник 220k/220k → GPIO1 показує заряд, C4 100 нФ на GPIO1 згладжує відліки АЦП. Шини 5 В і GND до стрічки — до 1.5 А, дріт AWG22; сигнали — AWG28.</p>
+    <p class="note">Спільне: GPIO10 → 330 Ом → DIN, резистор впаяний у дріт біля стрічки. Ручка — між 3V3 і GND, повзунок → GPIO0. Дільник 220k/220k → GPIO1 показує заряд; обидва резистори паяються прямо на піни ESP32. Шум АЦП прибирає прошивка усередненням. Шини 5 В і GND до стрічки — до 1.5 А, дріт AWG22; сигнали — AWG28.</p>
+    <p class="note"><strong>Якщо стрічка мерехтить.</strong> 3.3 В з ESP32 нижче за поріг SK6812 від 5 В (3.5 В), хоча зазвичай працює. Тоді живи перший світлодіод через діод 1N4148: його поріг падає до ≈3 В, а решта стрічки отримує повні 5 В від нього.</p>
   </section>
 
   <h2>Мережі</h2>
@@ -400,7 +270,7 @@
 (function () {
   var N = window.LAMP_NETS, svg = document.getElementById('sch');
   var out = document.getElementById('check'), tbody = document.getElementById('nets');
-  var THICK = { 'GND': 1, '5V_OUT': 1, '5V_SW': 1, 'LED_5V': 1 }; // шини стрічки
+  var THICK = { 'GND': 1, '5V_OUT': 1, '5V_SW': 1 }; // шини стрічки
   function inV(tag, v) { return tag === 'both' || tag === v; }
 
   // Самоперевірка: піни на схемі (data-pin) ↔ піни в LAMP_NETS для варіанта, в обидва боки
