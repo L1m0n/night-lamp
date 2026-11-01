@@ -20,7 +20,7 @@ ring_z   = 15;                // дно-кільце шейдера (r 28…38.5
 fil_c    = [55 * S, sz(40)];  // центр заокруглення
 fil_r    = 25 * S;
 belt_r   = 80 * S;            // пояс
-cut_z    = sz(50);            // розріз: чаша нижче, плафон вище — по верху поясу
+belt_z   = sz(50);            // верх поясу
 cone_top = [70.0227 * S, sz(249.675)];  // кінець конуса, далі заокруглення 0.5
 top_z    = sz(250.15);
 wall     = 2;
@@ -68,7 +68,7 @@ groove = [6, 1.5];           // жолоб під дроти з колони д�
 cup_depth = 8;
 cup_wall  = 2;
 col_fit   = 0.2;
-refl = [104, 1.2];           // білий відбивач
+refl = [103, 1.2];           // білий відбивач
 
 /* [Колона] */
 col_face = 12.5;   // грань восьмигранника
@@ -113,15 +113,16 @@ shaft_hole  = 9;              // глибина отвору від низу х�
 $fn = 180;
 
 // --- похідні розміри ---
-k        = (belt_r - cone_top.x) / (cone_top.y - cut_z);    // нахил конуса dr/dz
-cone_in  = belt_r - wall * sqrt(1 + k * k);                 // внутрішній конус на z=50
+k        = (belt_r - cone_top.x) / (cone_top.y - belt_z);    // нахил конуса dr/dz
+cone_in  = belt_r - wall * sqrt(1 + k * k);                 // внутрішній конус на верху поясу
 function in_r(z) = z < fil_c.y ? fil_c.x + sqrt(pow(fil_r - wall, 2) - pow(fil_c.y - z, 2))
-                 : z <= cut_z ? belt_r - wall : cone_in - k * (z - cut_z);
+                 : z <= belt_z ? belt_r - wall : cone_in - k * (z - belt_z);
 col_flat  = col_face / (2 * tan(22.5));  // половина розміру під ключ
 chassis_z = collar.z + 2;                // шасі лежить на верху коміра
 deck_z    = chassis_z + chassis_t;       // верх диска шасі
 bat_top   = deck_z + 2 * cell.z;
 refl_z    = bat_top;                     // відбивач лежить на акумуляторах
+cut_z     = refl_z + refl[1] + 1;         // розріз: відбивач на 1 мм нижче краю чаші
 bat_y0    = col_flat + col_fit + cup_wall + 0.5 + bat_tol;  // акумулятори двома стосами по боках колони (±Y)
 bat_corner = norm([cell.x / 2 + bat_tol, bat_y0 + cell.y + bat_tol]);
 pocket_r  = in_r(deck_z) - 0.3;
@@ -131,7 +132,7 @@ usb_hole  = plug + [2, 2] * plug_fit;                       // зенківка 
 pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_fit;  // край плати з USB-C: кути кишені ≥1.2 від боку шайби
 sock_front = pm_x1 + usb_over;                             // торець гнізда USB-C
 win_x0    = sock_front - 0.5;                              // дно зенківки: трохи за торцем гнізда
-sleeve_r  = belt_r - wall - lap_fit;                        // зовнішній радіус манжети плафона
+sleeve_r  = in_r(cut_z) - lap_fit;                          // зовнішній радіус манжети: чаша над поясом звужується, найвужче — на краю
 bay_z     = cut_z - lap / 2 - bay.y / 2;                    // низ ламелі
 bay_a     = bay.x / sleeve_r * 180 / PI;                    // ламель по дузі, градуси
 bore      = col_bore - 2 * fit - 2 * guide_wall;            // отвір напрямної V1
@@ -174,13 +175,15 @@ assert(pm_x1 <= sock_front, "плата IP5306 заходить у шлях шт
 assert(usb_hole.x >= plug.x + 0.3 && usb_hole.y >= plug.y + 0.3, "корпус штекера не проходить у зенківку");
 assert(usb_z - usb_hole.y / 2 > puck_z[0] + 1, "зенківка USB-C прориває низ шайби");
 assert(usb_sock.y < usb_hole.x && usb_sock.z < usb_hole.y, "гніздо більше за зенківку");
-assert(belt_r - wall + lap_join > cone_in - k && belt_r - wall + lap_join < belt_r - 0.5, "манжета не зростається зі стінкою плафона");
+assert(belt_r - wall + lap_join > in_r(cut_z + 1) && belt_r - wall + lap_join < in_r(cut_z + 1) + wall - 0.5, "манжета не зростається зі стінкою плафона");
+assert(refl[0] / 2 < sleeve_r - lap_t - 0.3, "відбивач не влазить у манжету плафона");
+assert(sleeve_r + bay.z + bay_fit < in_r(cut_z) + wall - 0.9, "паз байонета прориває чашу: стінка під пазом < 0.9");
 
 // --- шейдер ---
 function arc(c, r, a0, a1, n = 30) = [for (i = [0:n]) c + r * [cos(a0 + (a1 - a0) * i / n), sin(a0 + (a1 - a0) * i / n)]];
 
 module shade_envelope() {  // усе, що обмежує зовнішня поверхня, до осі
-  polygon(concat([[0, ring_z]], arc(fil_c, fil_r, -90, 0), [[belt_r, cut_z]],
+  polygon(concat([[0, ring_z]], arc(fil_c, fil_r, -90, 0), [[belt_r, belt_z]],
                  arc([cone_top.x - 0.5 * cos(atan(k)), top_z - 0.5], 0.5, atan(k), 90), [[0, top_z]]));
 }
 
@@ -218,7 +221,7 @@ module bowl() {
     }
   }
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n)  // горбик: ламель перескакує його в кінці повороту
-    arc_ring(belt_r - wall, sleeve_r + bay.z + bay_fit + 0.1, bay_z - bay_fit - 0.01, bump_h + 0.01, bay_turn - 1.2, bay_turn - 0.4);
+    arc_ring(in_r(cut_z), sleeve_r + bay.z + bay_fit + 0.1, bay_z - bay_fit - 0.01, bump_h + 0.01, bay_turn - 1.2, bay_turn - 0.4);
 }
 
 module shade_top() {
