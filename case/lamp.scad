@@ -72,9 +72,14 @@ refl = [150, 1.2];           // білий відбивач
 col_face = 12.5;   // грань восьмигранника
 col_top  = 230;
 col_bore = 22;
-slot     = [6, 6];   // паз на нижньому торці під дроти в жолоб шасі
-win      = [6, 8];   // вікна під дроти стрічки біля торців
-win_z    = [53, 205];
+slot     = [6, 6];   // паз на нижньому торці: шини й дані з шасі в колону
+strip_z0  = 46;               // низ смуги (кінець з падами); смуга нижче відбивача, перший LED уже над ним
+strip_len = 10 * 1000 / 60;   // 10 LED при 60/м = 166.7
+strip_t   = 3;                // товщина смуги разом з LED і скотчем
+strip_pcb = 1.5;              // кінець смуги без LED, з пайкою — стоїть між акумуляторами
+pitch_led = 1000 / 60;
+wire_d    = 3.5;              // отвори під дроти смуги: на кожній грані під і над смугою
+wire_gap  = 0.5;              // від торця смуги до краю отвору
 
 /* [Вузол дімера V1: B100K + KFC-003A] */
 pot1_body  = [16, 7];      // корпус: діаметр, глибина від монтажної площини — заміряти
@@ -130,6 +135,9 @@ guide_z0  = sb_base - 1.5;
 pot2_face = bush_top - pot2_bush;
 v1_bush   = pot1_face + pot1_bush;
 node_top  = max(v1_bush, bush_top);
+strip_z1  = strip_z0 + strip_len;
+wire_z    = [strip_z0 - wire_gap - wire_d / 2, strip_z1 + wire_gap + wire_d / 2];  // центри отворів
+node_z0   = min(guide_z0, col_top - 5);   // нижче — порожнина колони вільна (напрямна V1, хвостовик кришки V2)
 
 echo(str("Внутрішній радіус чаші: z=27 → ", in_r(27), ", z=", bat_top, " → ", in_r(bat_top)));
 echo(str("Вал у хвостовику: V1 ", pot1_face + pot1_shaft - boss[1], ", V2 ", pot2_face + pot2_shaft - boss[1]));
@@ -146,6 +154,11 @@ assert(chassis_d / 2 + chassis_fit <= in_r(chassis_z), "шасі не прохо
 assert(col_flat + col_fit + cup_wall <= (cell.x - cell.y) / 2, "стакан колони не влазить у центр вітряка");
 assert(v1_travel > sb_stroke && v1_travel < dim_z[0] - plate_z[1], "хід каретки V1: має натиснути кнопку і не впертися дімером у плафон");
 assert(refl[0] / 2 < in_r(refl_z + refl[1]), "відбивач не влазить у плафон");
+assert(wire_z[0] + wire_d / 2 < strip_z0 && wire_z[1] - wire_d / 2 > strip_z1, "отвір під дроти заходить під смугу");
+assert(wire_z[0] - wire_d / 2 > deck_z + cup_depth, "нижній отвір під дроти схований у стакані шасі");
+assert(wire_z[1] + wire_d / 2 < node_z0 && node_z0 <= col_top, "верхній отвір під дроти впирається у вузол дімера або виходить за колону");
+assert((cell.x - cell.y) / 2 - col_flat >= strip_pcb, "кінець смуги з пайкою не влазить між колоною й акумуляторами");
+assert(strip_z0 + pitch_led / 2 - 2.5 > refl_z + refl[1], "перший LED під відбивачем");
 assert(chan_x + chan_d / 2 < col_bore / 2, "канал з шайби має виходити всередину колони");
 assert(pm_x1 - ip5306.y > chan_x - chan_d / 2, "плата IP5306 не влазить у кишеню");
 assert(norm([pm_x1 + pm_fit, ip5306.x / 2 + pm_fit]) < puck_d / 2 - 1, "кишеня IP5306 прориває бік шайби");
@@ -258,7 +271,7 @@ module chassis() {
 }
 
 module reflector() {
-  translate([0, 0, refl_z]) linear_extrude(refl[1]) difference() { circle(d = refl[0]); octagon(col_flat + col_fit + 0.3); }
+  translate([0, 0, refl_z]) linear_extrude(refl[1]) difference() { circle(d = refl[0]); octagon(col_flat + strip_t + 0.3); }  // пропускає смугу
 }
 
 // --- колона ---
@@ -267,7 +280,7 @@ module column() {
     translate([0, 0, deck_z]) linear_extrude(col_top - deck_z) octagon(col_flat);
     translate([0, 0, deck_z - 1]) cylinder(d = col_bore, h = col_top - deck_z + 2);
     translate([col_flat - 5, -slot.x / 2, deck_z - 1]) cube([10, slot.x, slot.y + 1]);  // у жолоб шасі
-    for (z = win_z) translate([col_flat - 5, -win.x / 2, z]) cube([10, win.x, win.y]);   // до стрічки
+    for (a = [0:45:315], z = wire_z) rotate(a) translate([col_flat - 5, 0, z]) rotate([0, 90, 0]) cylinder(d = wire_d, h = 10, $fn = 24);
   }
 }
 
