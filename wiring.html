@@ -157,17 +157,17 @@
   }
   function vg(v, fn) { a('<g data-variant="' + v + '">'); fn(); a('</g>'); }
 
-  // ── BT1: 8 комірок, два шари по 4, спільні шини + і − ──
+  // ── BT1: 4 комірки, два стоси по 2, спільні шини + і − ──
   t(20, 40, 'BT1 · акумулятор', 'ref');
-  t(20, 54, '8 × Li-Pol 55×20×10, паралельно (1S)', 'pn');
-  for (var L = 0; L < 2; L++) for (var i = 0; i < 4; i++) {
-    var cx = 30 + L * 112 + i * 26;
+  t(20, 54, '4 × Li-Pol 55×20×10, паралельно (1S)', 'pn');
+  for (var L = 0; L < 2; L++) for (var i = 0; i < 2; i++) {
+    var cx = 56 + L * 112 + i * 26;
     a('<path class="bus c-w5" style="stroke-width:2" d="M' + (cx + 10) + ' 100V84"/><path class="bus c-wg" style="stroke-width:2" d="M' + (cx + 10) + ' 220V236"/>');
     r(cx, 100, 20, 120, 'body', 3); r(cx + 2, 103, 16, 12, 'pcm');
     t(cx + 10, 112, 'PCM', 'tiny mid'); t(cx + 10, 165, '+', 'tiny mid');
   }
   a('<path class="bus c-w5" d="M24 84H262"/><path class="bus c-wg" d="M24 236H262"/>');
-  t(79, 254, 'шар 1', 'pn mid'); t(191, 254, 'шар 2', 'pn mid');
+  t(79, 254, 'стос +Y', 'pn mid'); t(191, 254, 'стос −Y', 'pn mid');
   t(20, 276, 'перед з’єднанням вирівняти напругу ±0.05 В,', 'pn');
   t(20, 290, 'у кожної комірки — PCM', 'pn');
   t(250, 78, '+', 'ref end'); t(250, 252, '−', 'ref end');

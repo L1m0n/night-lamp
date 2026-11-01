@@ -5,7 +5,7 @@
    Без макетки: R1 впаяний у дріт DIN, R2/R3 — прямо на пінах ESP32. */
 window.LAMP_NETS = {
   parts: {
-    BT1:  { name: "8× Li-Pol 850 мА·год паралельно (1S)", variant: "both", pins: { "+": "плюс", "-": "мінус" } },
+    BT1:  { name: "4× Li-Pol 850 мА·год паралельно (1S)", variant: "both", pins: { "+": "плюс", "-": "мінус" } },
     U1:   { name: "IP5306, модуль павербанка з USB-C", variant: "both",
             pins: { "BAT+": "акумулятор +", "BAT-": "акумулятор −", "VOUT": "вихід 5 В", "GND": "земля", "KEY": "кнопка вмикання" } },
     U2:   { name: "ESP32-C3 SuperMini", variant: "both",
