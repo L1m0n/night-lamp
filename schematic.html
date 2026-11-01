@@ -222,6 +222,13 @@
     <text class="end" x="290" y="413">220k</text>
     <path class="s" d="M300 360H380"/>
     <text class="net" x="308" y="353">VBAT_SENSE</text>
+    <circle class="dot s" cx="340" cy="360" r="2.5"/>
+    <line class="s" data-pin="C4.1" x1="340" y1="360" x2="340" y2="392"/>
+    <path class="b" d="M328 392h24M328 398h24"/>
+    <line class="w" data-pin="C4.2" x1="340" y1="398" x2="340" y2="412"/>
+    <use href="#gnd" x="340" y="412"/>
+    <text class="ref" x="356" y="396">C4</text>
+    <text x="356" y="409">100 нФ</text>
 
     <!-- ── U2: ESP32-C3 SuperMini ── -->
     <rect class="b" x="400" y="280" width="180" height="220"/>
@@ -371,14 +378,14 @@
     <h2>Як це працює</h2>
     <div data-variant="v1">
       <p><strong>Увімкнення.</strong> Натиск на дімер тисне кнопку SW1 — вона замикає KEY на землю, і IP5306 вмикає 5 В. ESP32 стартує й одразу відкриває ключ стрічки: GPIO6 → Q2 тягне затвор Q1 (AO3401) униз, і 5 В іде на LED_5V.</p>
-      <p><strong>Вимкнення.</strong> Ручка на мінімумі — ESP32 гасить стрічку, GPIO6 закриває Q1 (R4 підтягує затвор до 5 В), а GPIO7 через Q3 двічі «тисне» KEY — IP5306 вимикається. Якщо не спрацює, IP5306 сам засне без навантаження приблизно за 32 с.</p>
+      <p><strong>Вимкнення.</strong> Ручка на мінімумі — ESP32 гасить стрічку, GPIO6 закриває Q1 (R4 підтягує затвор до 5 В), а GPIO7 через Q3 двічі «тисне» KEY — IP5306 вимикається. Якщо це не спрацює, а ESP32 після цього піде в deep sleep, IP5306 засне сам приблизно за 32 с. Прошивка спершу ставить GPIO10 у 0, потім гасить LED_PWR — інакше стрічка підживлюється через DIN.</p>
       <p class="note">Q2 потрібен, бо 3.3 В з GPIO не закриють P-MOSFET, що стоїть на 5 В. R5 і R6 тримають затвори Q2/Q3 закритими, поки ESP32 не стартував.</p>
     </div>
     <div data-variant="v2">
       <p><strong>Увімкнення й вимкнення.</strong> Вимикач у потенціометрі RV2 стоїть між 5V_OUT і рештою схеми: поворот зі «клацом» замикає S1–S2, і 5 В (5V_SW) іде на ESP32, 74AHCT і стрічку. «Клац» назад рве 5 В — усе гасне, IP5306 засинає сам.</p>
       <p class="note">MOSFET-ів і кнопки немає, KEY на IP5306 не підключено. IP5306 має сам прокинутися, коли знову з'являється навантаження, — це перевіряється на столі.</p>
     </div>
-    <p class="note">Спільне: GPIO10 → 74AHCT1G125 (3.3 → 5 В) → 330 Ом → DIN, біля входу стрічки 1000 мкФ. Ручка — між 3V3 і GND, повзунок через 100 нФ на землю → GPIO0. Дільник 220k/220k → GPIO1 показує заряд. Шини 5 В і GND до стрічки — до 1.5 А, дріт AWG22; сигнали — AWG28.</p>
+    <p class="note">Спільне: GPIO10 → 74AHCT1G125 (3.3 → 5 В) → 330 Ом → DIN, біля входу стрічки 1000 мкФ. Ручка — між 3V3 і GND, повзунок через 100 нФ на землю → GPIO0. Дільник 220k/220k → GPIO1 показує заряд, C4 100 нФ на GPIO1 згладжує відліки АЦП. Шини 5 В і GND до стрічки — до 1.5 А, дріт AWG22; сигнали — AWG28.</p>
   </section>
 
   <h2>Мережі</h2>
@@ -442,10 +449,14 @@
     });
   }
 
+  // Варіант спільний з іншими сторінками (wiring.html, render.html)
+  var KEY = 'lamp-variant', v0 = 'v1';
+  try { var s = localStorage.getItem(KEY); if (s === 'v1' || s === 'v2') v0 = s; } catch (e) {}
   document.querySelectorAll('input[name="variant"]').forEach(function (r) {
-    r.addEventListener('change', function () { render(r.value); });
+    r.checked = r.value === v0;
+    r.addEventListener('change', function () { try { localStorage.setItem(KEY, r.value); } catch (e) {} render(r.value); });
   });
-  render(document.querySelector('input[name="variant"]:checked').value);
+  render(v0);
 })();
 </script>
 </body>

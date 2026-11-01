@@ -39,8 +39,8 @@
       <label><input type="radio" name="light" value="off"><span>Вимкнено</span></label>
     </div>
     <div class="toggle" role="radiogroup" aria-label="Варіант">
-      <label><input type="radio" name="variant" value="V1"><span>V1</span></label>
-      <label><input type="radio" name="variant" value="V2" checked><span>V2</span></label>
+      <label><input type="radio" name="variant" value="V1" checked><span>V1</span></label>
+      <label><input type="radio" name="variant" value="V2"><span>V2</span></label>
     </div>
     <label class="range">Розібрати <input type="range" id="explode" min="0" max="1" step="0.01" value="0"></label>
   </div>
@@ -159,8 +159,12 @@
   document.querySelectorAll('input[name="light"]').forEach(function (r) {
     r.addEventListener('change', function () { target.glow = r.value === 'on' ? 1 : 0; });
   });
+  // Варіант спільний із wiring.html і schematic.html: ключ lamp-variant, значення v1/v2
+  var VKEY = 'lamp-variant', v0 = 'V1';
+  try { var sv = localStorage.getItem(VKEY); if (sv === 'v1' || sv === 'v2') v0 = sv.toUpperCase(); } catch (e) {}
   document.querySelectorAll('input[name="variant"]').forEach(function (r) {
-    r.addEventListener('change', function () { setVariant(r.value); v.dirty = true; });
+    r.checked = r.value === v0;
+    r.addEventListener('change', function () { try { localStorage.setItem(VKEY, r.value.toLowerCase()); } catch (e) {} setVariant(r.value); v.dirty = true; });
   });
   var slider = document.getElementById('explode');
   slider.addEventListener('input', function () { target.t = +slider.value; });
