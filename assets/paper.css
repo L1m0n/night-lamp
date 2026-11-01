@@ -8,6 +8,7 @@
   --hollow: #c9bfb0;
   --accent: #c0643f;
   --on-accent: #fff;
+  --danger: #b3261e;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -20,6 +21,7 @@
     --hollow: #5a5248;
     --accent: #d9825e;
     --on-accent: #1d1b18;
+    --danger: #f2867e;
     color-scheme: dark;
   }
 }
@@ -32,6 +34,7 @@
   --hollow: #5a5248;
   --accent: #d9825e;
   --on-accent: #1d1b18;
+  --danger: #f2867e;
   color-scheme: dark;
 }
 

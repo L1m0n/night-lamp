@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Підключення лампи</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:opsz,wght@6..72,400&display=swap">
+<link rel="stylesheet" href="assets/paper.css">
+<style>
+  /* Кольори дротів — єдине місце зі «справжніми» кольорами; у темній темі світліші */
+  :root { --w5: #c8352b; --wg: #26221d; --wd: var(--accent); --wa: #7d7838; --wk: #4d6987; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --w5: #f07a6e; --wg: #cfc8bc; --wa: #bdb872; --wk: #93b2d0; } }
+  :root[data-theme="dark"] { --w5: #f07a6e; --wg: #cfc8bc; --wa: #bdb872; --wk: #93b2d0; }
+
+  body[data-v="v1"] [data-variant="v2"], body[data-v="v2"] [data-variant="v1"] { display: none; }
+
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 0 0 20px; }
+  .steps { margin: 0 0 28px; padding-left: 1.4em; max-width: 46em; }
+  .steps li { margin: 0 0 4px; }
+  .fw { margin: 0 0 28px; max-width: 46em; padding-left: 14px; border-left: 2px solid var(--accent); color: var(--muted); font-size: 14px; }
+
+  .wd-wrap { overflow-x: auto; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 16px 0; -webkit-overflow-scrolling: touch; }
+  .wd { display: block; width: 100%; min-width: 940px; height: auto; }
+  .wd text { font-family: "Inter", system-ui, sans-serif; font-size: 10.5px; fill: var(--muted); }
+  .wd .ref { font-size: 12px; font-weight: 500; fill: var(--ink); }
+  .wd .pn { font-size: 10px; fill: var(--faint); }
+  .wd .tiny { font-size: 7.5px; fill: var(--faint); }
+  .wd .mid { text-anchor: middle; }
+  .wd .end { text-anchor: end; }
+  .wd .mod, .wd .body { fill: var(--bg); stroke: var(--muted); stroke-width: 1.2; }
+  .wd .chip { fill: var(--rule); stroke: var(--muted); stroke-width: 1; }
+  .wd .port { fill: var(--hollow); stroke: none; }
+  .wd .pcb { fill: none; stroke: var(--hollow); stroke-width: 1.2; }
+  .wd .hole { fill: var(--rule); }
+  .wd .pcm { fill: var(--rule); stroke: none; }
+  .wd .strip { fill: none; stroke: var(--hollow); stroke-width: 1.2; }
+  .wd .led { fill: var(--bg); stroke: var(--faint); stroke-width: 1; }
+  .wd .lug { fill: var(--rule); stroke: var(--faint); stroke-width: 1; }
+  .wd .shaft { fill: none; stroke: var(--hollow); stroke-dasharray: 3 3; }
+  .wd .spad { fill: var(--bg); stroke: var(--faint); stroke-width: 1; }
+  .wd .pad { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+  .wd .pad.nc { stroke: var(--hollow); }
+  .wd .arr { stroke: var(--accent); stroke-width: 1.2; fill: none; }
+  .wd .tipa { fill: var(--accent); }
+  .wd .wire, .wd .halo, .wd .bus { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .wd .halo { stroke: var(--bg); stroke-width: 4.6; }
+  .wd .halo.thick { stroke-width: 6.4; }
+  .wd .wire { stroke-width: 1.8; }
+  .wd .wire.thick, .wd .bus { stroke-width: 3.2; }
+  .wd .wire.onboard { stroke-dasharray: 2 4; stroke-width: 1.4; }
+  .wd .c-w5 { stroke: var(--w5); } .wd .c-wg { stroke: var(--wg); } .wd .c-wd { stroke: var(--wd); }
+  .wd .c-wa { stroke: var(--wa); } .wd .c-wk { stroke: var(--wk); }
+  .wd .jd { fill: none; stroke: var(--wd); stroke-width: 1.8; }
+  .hint { margin: 8px 0 0; font-size: 12px; color: var(--faint); }
+  @media (min-width: 960px) { .hint { display: none; } }
+  .check { margin: 10px 0 0; font-size: 13px; color: var(--faint); }
+  .check.bad { color: var(--danger); }
+
+  h2 { margin: 56px 0 12px; font-size: 28px; }
+  .sw { display: inline-block; width: 22px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 8px; border-radius: 2px; }
+  .sw.thin { border-top-width: 2px; }
+  .sw.c-w5 { color: var(--w5); } .sw.c-wg { color: var(--wg); } .sw.c-wd { color: var(--wd); }
+  .sw.c-wa { color: var(--wa); } .sw.c-wk { color: var(--wk); }
+  .wires .sub { display: block; }
+  .wires td, .wires th { overflow-wrap: anywhere; }
+  .wires .n { color: var(--faint); width: 2.5em; }
+  @media (max-width: 760px) {
+    .wires.tbl tbody tr:not(.grp) { grid-template-columns: 1fr; }
+    .wires.tbl tbody tr:not(.grp) > * { grid-column: 1; }
+    .wires .n { display: none; }
+  }
+</style>
+</head>
+<body data-v="v1">
+<main class="page">
+  <nav class="nav" aria-label="Розділи">
+    <a href="parts.html">Комплектуючі</a>
+    <a href="parts-3d.html">Деталі 3D</a>
+    <a href="render.html">Рендер</a>
+    <a href="schematic.html">Схема</a>
+    <a href="wiring.html" aria-current="page">Підключення</a>
+  </nav>
+
+  <p class="eyebrow">Нічна лампа · монтаж</p>
+  <h1>Що куди паяти</h1>
+  <p class="lede">Монтажна картинка: модулі з контактами в реальному порядку і кольорові дроти між ними. Товсті дроти — живлення й земля (AWG22, до 1.5 А), тонкі — сигнали (AWG28).</p>
+
+  <div class="bar">
+    <div class="toggle" role="radiogroup" aria-label="Варіант">
+      <label><input type="radio" name="variant" value="v1" checked><span>V1</span></label>
+      <label><input type="radio" name="variant" value="v2"><span>V2</span></label>
+    </div>
+    <p style="margin:0;font-size:13px;color:var(--muted)">
+      <span data-variant="v1">V1 — B100K, кнопка KFC-003A і MOSFET-и</span>
+      <span data-variant="v2">V2 — RK097NS з вимикачем у ручці</span>
+    </p>
+  </div>
+
+  <ol class="steps">
+    <li>Вирівняй напругу комірок (±0.05 В) і спаяй пакет: усі «+» на одну шину, усі «−» на другу.</li>
+    <li>Пакет → B+ / B− на IP5306 (AWG22); заряди через USB-C, перевір 5 В на OUT+.</li>
+    <li>Збери макетку <span data-variant="v1">(U3, R1, C3, дільник, C2, Q1–Q3, R4–R6)</span><span data-variant="v2">(U3, R1, C3, дільник, C2)</span> і прозвони 5 В ↔ GND на замикання.</li>
+    <li>Колона: 8 смуг змійкою, перемички даних, шини 5 В / GND з відводами на DIN-кінці, C1 на вході.</li>
+    <li>Підпаяй ESP32-C3 і <span data-variant="v1">потенціометр з кнопкою SW1</span><span data-variant="v2">потенціометр RK097NS</span> тонким дротом.</li>
+    <li>Перший запуск — без стрічки; потім підключи колону й перевір струм.</li>
+  </ol>
+  <p class="fw" data-variant="v1">Прошивка спершу ставить GPIO10 у 0, потім гасить LED_PWR — інакше стрічка підживлюється через DIN.</p>
+  <p class="fw" data-variant="v2">Вимикач RK097NS рве 5 В одночасно для ESP32 і стрічки, тож окремого порядку гасіння немає. GPIO10 перед вимкненням однаково варто тримати в 0.</p>
+
+  <div class="wd-wrap">
+  <svg class="wd" id="wd" viewBox="0 0 1180 1070" role="img" aria-labelledby="wd-title">
+    <title id="wd-title">Монтажна схема лампи: модулі, макетка, колона-змійка і дроти між ними</title>
+    <defs>
+      <pattern id="holes" width="10" height="10" patternUnits="userSpaceOnUse"><circle class="hole" cx="5" cy="5" r="1.3"/></pattern>
+      <marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="tipa" d="M0 0L8 4L0 8z"/></marker>
+    </defs>
+    <g id="art"></g>
+    <g id="wires"></g>
+    <g id="pads"></g>
+  </svg>
+  </div>
+  <p class="hint">Картинку можна гортати вбік.</p>
+  <p class="check" id="check" aria-live="polite"></p>
+
+  <h2>Звідки → куди → дріт</h2>
+  <table class="tbl wires">
+    <thead><tr><th scope="col" class="n">#</th><th scope="col">Звідки</th><th scope="col">Куди</th><th scope="col">Дріт</th><th scope="col">Мережа</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+<script src="assets/nets.js"></script>
+<script>
+(function () {
+  var N = window.LAMP_NETS, svg = document.getElementById('wd');
+  var art = [], pads = [], P = {}; // P: "REF.PIN" → {x, y, d, label}
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function t(x, y, s, cls) { art.push('<text x="' + x + '" y="' + y + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(s) + '</text>'); }
+  function r(x, y, w, h, cls, rx) { art.push('<rect class="' + cls + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"' + (rx ? ' rx="' + rx + '"' : '') + '/>'); }
+  function a(s) { art.push(s); }
+  // Контакт: id = "REF.PIN" (член мережі → data-pin) або null (непідключений); d — куди виходить дріт
+  function pad(x, y, id, d, label, v) {
+    var g = v ? '<g data-variant="' + v + '">' : '';
+    pads.push(g + '<circle class="pad' + (id ? '' : ' nc') + '" cx="' + x + '" cy="' + y + '" r="4.2"' + (id ? ' data-pin="' + id + '"' : '') + '/>' + (v ? '</g>' : ''));
+    if (id) P[id] = { x: x, y: y, d: d, label: label };
+  }
+  function vg(v, fn) { a('<g data-variant="' + v + '">'); fn(); a('</g>'); }
+
+  // ── BT1: 8 комірок, два шари по 4, спільні шини + і − ──
+  t(20, 40, 'BT1 · акумулятор', 'ref');
+  t(20, 54, '8 × Li-Pol 55×20×10, паралельно (1S)', 'pn');
+  for (var L = 0; L < 2; L++) for (var i = 0; i < 4; i++) {
+    var cx = 30 + L * 112 + i * 26;
+    a('<path class="bus c-w5" style="stroke-width:2" d="M' + (cx + 10) + ' 100V84"/><path class="bus c-wg" style="stroke-width:2" d="M' + (cx + 10) + ' 220V236"/>');
+    r(cx, 100, 20, 120, 'body', 3); r(cx + 2, 103, 16, 12, 'pcm');
+    t(cx + 10, 112, 'PCM', 'tiny mid'); t(cx + 10, 165, '+', 'tiny mid');
+  }
+  a('<path class="bus c-w5" d="M24 84H262"/><path class="bus c-wg" d="M24 236H262"/>');
+  t(79, 254, 'шар 1', 'pn mid'); t(191, 254, 'шар 2', 'pn mid');
+  t(20, 276, 'перед з’єднанням вирівняти напругу ±0.05 В,', 'pn');
+  t(20, 290, 'у кожної комірки — PCM', 'pn');
+  t(250, 78, '+', 'ref end'); t(250, 252, '−', 'ref end');
+  pad(262, 84, 'BT1.+', 'r', '+ шина'); pad(262, 236, 'BT1.-', 'r', '− шина');
+
+  // ── U1: IP5306 ──
+  r(300, 80, 140, 160, 'mod', 6); r(345, 72, 50, 14, 'port', 4); t(370, 66, 'USB-C', 'pn mid');
+  r(326, 128, 48, 40, 'chip'); t(350, 152, 'IP5306', 'tiny mid');
+  r(390, 132, 30, 30, 'body', 3); a('<circle class="body" cx="405" cy="147" r="8"/>'); t(405, 176, 'кнопка', 'tiny mid');
+  t(324, 108, 'B+', 'pn'); t(324, 202, 'B−', 'pn'); t(416, 108, 'OUT+', 'pn end'); t(416, 202, 'OUT−', 'pn end'); t(360, 230, 'KEY', 'pn end');
+  t(300, 30, 'U1 · IP5306', 'ref'); t(300, 46, 'модуль павербанка', 'pn');
+  t(370, 192, 'KEY = контакт кнопки', 'tiny mid');
+  pad(314, 104, 'U1.BAT+', 'l', 'B+'); pad(314, 216, 'U1.BAT-', 'l', 'B−');
+  pad(426, 104, 'U1.VOUT', 'r', 'OUT+'); pad(426, 216, 'U1.GND', 'r', 'OUT−');
+  pad(370, 226, 'U1.KEY', 'd', 'KEY', 'v1'); pad(370, 226, null, 'd', 'KEY', 'v2');
+
+  // ── U2: ESP32-C3 SuperMini, USB-C вгорі, компонентами до нас ──
+  r(540, 60, 150, 230, 'mod', 6); r(590, 52, 50, 16, 'port', 4); t(615, 46, 'USB-C', 'pn mid');
+  r(602, 146, 26, 26, 'chip'); t(615, 162, 'C3', 'tiny mid');
+  var LP = ['5V', 'GND', '3V3', 'GPIO4', 'GPIO3', 'GPIO2', 'GPIO1', 'GPIO0'], LN = { '5V': 1, 'GND': 1, '3V3': 1, 'GPIO1': 1, 'GPIO0': 1 };
+  var RP = ['GPIO5', 'GPIO6', 'GPIO7', 'GPIO8', 'GPIO9', 'GPIO10', 'GPIO20', 'GPIO21'], RV1 = { 'GPIO6': 1, 'GPIO7': 1 };
+  LP.forEach(function (p, k) { var y = 100 + 24 * k; t(564, y + 4, p, 'pn'); pad(554, y, LN[p] ? 'U2.' + p : null, 'l', p); });
+  RP.forEach(function (p, k) {
+    var y = 100 + 24 * k; t(666, y + 4, p, 'pn end');
+    if (RV1[p]) { pad(676, y, 'U2.' + p, 'r', p, 'v1'); pad(676, y, null, 'r', p, 'v2'); }
+    else pad(676, y, p === 'GPIO10' ? 'U2.GPIO10' : null, 'r', p);
+  });
+  t(540, 308, 'U2 · ESP32-C3 SuperMini', 'ref');
+  t(540, 322, 'вигляд згори; звір', 'pn'); t(540, 336, 'з шовкографією своєї плати', 'pn');
+
+  // ── LED1: колона-змійка, розгорнута; смуга 1 знизу вгору, 2 згори вниз… ──
+  t(830, 30, 'LED1 · колона-змійка, розгорнута', 'ref');
+  t(830, 46, '8 смуг × 10 SK6812 RGBW навколо восьмигранника', 'pn');
+  var X = []; for (i = 0; i < 8; i++) X.push(860 + 40 * i);
+  a('<path class="bus c-w5" d="M790 430H810V72H' + (X[7] - 7) + 'M810 370H' + (X[6] - 7) + '"/>');
+  a('<path class="bus c-wg" d="M790 470H826V60H' + (X[7] + 7) + 'M826 382H' + (X[6] + 7) + '"/>');
+  a('<path class="wire c-wd" d="M790 500H850V392H' + X[0] + 'V346"/>');
+  a('<text class="pn mid" transform="translate(803 222) rotate(-90)">шини 5 В і GND усередині колони · AWG22</text>');
+  X.forEach(function (x, i) {
+    var up = i % 2 === 0, top = 94, bot = 346;
+    r(x - 12, 84, 24, 272, 'strip', 2);
+    for (var k = 0; k < 10; k++) r(x - 6, 120 + 20 * k, 12, 12, 'led', 1.5);
+    t(x, 112, up ? 'DOUT' : 'DIN', 'tiny mid'); t(x, 330, up ? 'DIN' : 'DOUT', 'tiny mid');
+    a('<path class="arr" marker-end="url(#ah)" d="M' + (x + 20) + (up ? ' 312V124' : ' 124V312') + '"/>');
+    if (up) a('<path class="bus c-w5" style="stroke-width:2" d="M' + (x - 7) + ' 346V370"/><path class="bus c-wg" style="stroke-width:2" d="M' + (x + 7) + ' 346V382"/>');
+    else a('<path class="bus c-w5" style="stroke-width:2" d="M' + (x - 7) + ' 94V72"/><path class="bus c-wg" style="stroke-width:2" d="M' + (x + 7) + ' 94V60"/>');
+    if (i < 7) { var y = up ? top : bot, c = up ? top - 18 : bot + 18, x2 = X[i + 1];
+      a('<path class="jd" d="M' + x + ' ' + y + 'C' + x + ' ' + c + ' ' + x2 + ' ' + c + ' ' + x2 + ' ' + y + '"/>'); }
+    [-7, 0, 7].forEach(function (o) { a('<circle class="spad" cx="' + (x + o) + '" cy="' + top + '" r="2.6"/><circle class="spad" cx="' + (x + o) + '" cy="' + bot + '" r="2.6"/>'); });
+    t(x, 404, String(i + 1), 'pn mid');
+  });
+  t(884, 428, 'непарні смуги — дані вгору, парні — вниз', 'pn');
+  t(884, 444, 'живлення — на DIN-кінець кожної смуги', 'pn');
+  t(884, 460, 'смуга 8: DOUT не підключено', 'pn');
+  t(884, 476, 'до 1.5 А: 5 В і GND — AWG22, дані — AWG28', 'pn');
+  t(798, 426, '5V', 'tiny'); t(798, 466, 'GND', 'tiny'); t(798, 496, 'DIN', 'tiny');
+  pad(790, 430, 'LED1.5V', 'l', '5V'); pad(790, 470, 'LED1.GND', 'l', 'GND'); pad(790, 500, 'LED1.DIN', 'l', 'DIN');
+  // C1 біля входу стрічки, полярність
+  r(752, 438, 16, 24, 'body', 3); a('<path class="pcm" d="M752 455h16v4a3 3 0 0 1-3 3h-10a3 3 0 0 1-3-3z"/>');
+  t(750, 448, '+', 'pn end'); t(752, 404, 'C1', 'ref'); t(752, 418, '1000 мкФ', 'tiny');
+  pad(760, 430, 'C1.1', 'l', '+'); pad(760, 470, 'C1.2', 'l', '−');
+
+  // ── Ручка-дімер: вигляд ззаду, виводи вгору ──
+  [86, 110, 134].forEach(function (x) { r(x - 4, 600, 8, 22, 'lug'); });
+  vg('v1', function () {
+    a('<circle class="body" cx="110" cy="668" r="48"/><circle class="shaft" cx="110" cy="668" r="16"/>');
+    t(86, 644, '1', 'pn mid'); t(110, 644, '2', 'pn mid'); t(134, 644, '3', 'pn mid'); t(110, 700, 'B100K', 'pn mid');
+    t(20, 740, 'RV1 · B100K', 'ref');
+    a('<path class="lug" d="M196 650V636M220 650V636"/>');
+    r(186, 650, 44, 44, 'body', 3); a('<circle class="body" cx="208" cy="672" r="12"/>');
+    t(186, 712, 'SW1 · KFC-003A', 'ref'); t(186, 726, 'під кареткою дімера', 'pn');
+  });
+  vg('v2', function () {
+    r(60, 618, 100, 100, 'body', 4); a('<circle class="shaft" cx="110" cy="668" r="24"/>');
+    r(92, 718, 8, 12, 'lug'); r(120, 718, 8, 12, 'lug');
+    t(86, 638, '1', 'pn mid'); t(110, 638, '2', 'pn mid'); t(134, 638, '3', 'pn mid');
+    t(96, 708, 'S1', 'tiny mid'); t(124, 708, 'S2', 'tiny mid');
+    t(186, 680, 'RV2 · RK097NS 10K', 'ref'); t(186, 694, 'з вимикачем S1–S2', 'pn');
+  });
+  t(20, 820, 'Ручка-дімер · вигляд ззаду: вал від тебе, виводи вгору', 'pn');
+  t(20, 836, 'яскравість росте не в той бік — поміняй виводи 1 і 3', 'pn');
+  t(20, 850, 'або інвертуй у прошивці', 'pn');
+  ['1', '2', '3'].forEach(function (n, k) {
+    pad(86 + 24 * k, 598, 'RV1.' + n, 'u', n, 'v1'); pad(86 + 24 * k, 598, 'RV2.' + n, 'u', n, 'v2');
+  });
+  pad(220, 636, 'SW1.1', 'u', '1', 'v1'); pad(196, 636, 'SW1.2', 'u', '2', 'v1');
+  pad(96, 734, 'RV2.S1', 'd', 'S1', 'v2'); pad(124, 734, 'RV2.S2', 'd', 'S2', 'v2');
+
+  // ── Макетка ~30×40 мм ──
+  r(360, 560, 340, 450, 'pcb', 4); a('<rect x="360" y="560" width="340" height="450" fill="url(#holes)"/>');
+  t(360, 1028, 'Макетка ~30×40 мм', 'ref');
+  t(360, 1044, 'R1 330 Ом · R2, R3 220k · R4–R6 10k · C2, C3 100 нФ · U3 74AHCT1G125', 'pn');
+  t(360, 1058, 'V1: Q1 AO3401 (P) · Q2, Q3 2N7002 (N)', 'pn');
+  function res(x, y1, y2, ref, left) { r(x - 6, y1 + 12, 12, y2 - y1 - 24, 'body', 2); t(left ? x - 10 : x + 10, (y1 + y2) / 2 + 4, ref, 'pn' + (left ? ' end' : '')); }
+  function resH(x1, x2, y, ref) { r(x1 + 10, y - 5, x2 - x1 - 20, 10, 'body', 2); t((x1 + x2) / 2, y + 18, ref, 'pn mid'); }
+  function cap(x, y1, y2, ref, left) { r(x - 8, y1 + 16, 16, y2 - y1 - 32, 'chip', 2); t(left ? x - 12 : x + 12, (y1 + y2) / 2 + 4, ref, 'pn' + (left ? ' end' : '')); }
+  function sot(x, y, ref) { r(x - 20, y - 10, 40, 20, 'chip', 2); t(x, y + 4, ref, 'tiny mid'); }
+  // аналог: дільник R2/R3 і C2 повзунка
+  res(380, 580, 640, 'R2'); res(380, 660, 720, 'R3'); cap(420, 680, 740, 'C2', 1);
+  pad(380, 580, 'R2.1', 'u', '1'); pad(380, 640, 'R2.2', 'd', '2'); pad(380, 660, 'R3.1', 'u', '1'); pad(380, 720, 'R3.2', 'd', '2');
+  pad(420, 680, 'C2.1', 'u', '1'); pad(420, 740, 'C2.2', 'd', '2');
+  // дані 3.3 → 5 В: U3 (SOT-23-5, згори VCC/Y, знизу OE/A/GND), C3, R1
+  cap(520, 580, 640, 'C3');
+  r(556, 598, 58, 24, 'chip', 2); t(585, 614, 'U3', 'tiny mid');
+  t(566, 582, 'VCC', 'tiny mid'); t(604, 582, 'Y', 'tiny mid');
+  resH(636, 684, 576, 'R1');
+  pad(520, 580, 'C3.1', 'u', '1'); pad(520, 640, 'C3.2', 'd', '2');
+  pad(566, 588, 'U3.VCC', 'u', 'VCC'); pad(604, 588, 'U3.Y', 'u', 'Y');
+  pad(566, 632, 'U3.OE', 'd', 'OE'); pad(585, 632, 'U3.A', 'd', 'A'); pad(604, 632, 'U3.GND', 'd', 'GND');
+  pad(636, 576, 'R1.1', 'l', '1'); pad(684, 576, 'R1.2', 'r', '2');
+  // V1: ключ стрічки Q1/Q2 і «натискач» KEY Q3
+  vg('v1', function () {
+    t(470, 702, 'V1 · ключ стрічки', 'tiny');
+    sot(540, 740, 'Q1'); resH(512, 568, 800, 'R4'); sot(630, 740, 'Q2'); res(690, 700, 760, 'R5', 1);
+    t(470, 884, 'V1 · KEY', 'tiny');
+    sot(540, 880, 'Q3'); resH(512, 568, 940, 'R6');
+  });
+  vg('v2', function () { t(470, 840, 'V2: ключа стрічки й KEY немає', 'pn'); });
+  pad(540, 720, 'Q1.D', 'u', 'D', 'v1'); pad(526, 760, 'Q1.S', 'd', 'S', 'v1'); pad(554, 760, 'Q1.G', 'd', 'G', 'v1');
+  pad(512, 800, 'R4.1', 'l', '1', 'v1'); pad(568, 800, 'R4.2', 'r', '2', 'v1');
+  pad(616, 720, 'Q2.S', 'u', 'S', 'v1'); pad(644, 720, 'Q2.G', 'u', 'G', 'v1'); pad(630, 760, 'Q2.D', 'd', 'D', 'v1');
+  pad(690, 700, 'R5.2', 'u', '2', 'v1'); pad(690, 760, 'R5.1', 'd', '1', 'v1');
+  pad(540, 860, 'Q3.D', 'u', 'D', 'v1'); pad(526, 900, 'Q3.S', 'd', 'S', 'v1'); pad(554, 900, 'Q3.G', 'd', 'G', 'v1');
+  pad(512, 940, 'R6.2', 'l', '2', 'v1'); pad(568, 940, 'R6.1', 'r', '1', 'v1');
+
+  // ── Легенда дротів ──
+  var LEG = [['c-w5', 'червоний — 5 В, BAT+', 'AWG22', 1], ['c-wg', 'чорний — GND', 'AWG22', 1],
+             ['c-wd', 'теракотовий — дані, керування', 'AWG28'], ['c-wa', 'оливковий — повзунок, дільник', 'AWG28'],
+             ['c-wk', 'синьо-сірий — KEY', 'AWG28']];
+  t(800, 580, 'Дроти', 'ref');
+  LEG.forEach(function (l, k) {
+    var y = 604 + 22 * k;
+    a('<path class="' + (l[3] ? 'bus ' : 'wire ') + l[0] + '" d="M800 ' + y + 'h28"/>');
+    t(838, y + 4, l[1] + ' · ' + l[2]);
+  });
+  a('<path class="wire onboard c-wg" d="M800 714h28"/>'); t(838, 718, 'пунктир — уже з’єднано на модулі');
+  t(800, 752, 'B− і OUT− на IP5306 зазвичай спільні —', 'pn'); t(800, 766, 'перевір прозвонкою.', 'pn');
+  t(800, 790, 'На макетці — короткі перемички знизу.', 'pn');
+
+  document.getElementById('art').innerHTML = art.join('');
+  document.getElementById('pads').innerHTML = pads.join('');
+
+  // ── Дроти з LAMP_NETS ──
+  var COL = { 'BAT+': 'w5', '5V_OUT': 'w5', '5V_SW': 'w5', 'LED_5V': 'w5', 'GND': 'wg',
+              'DATA_3V3': 'wd', 'DATA_5V': 'wd', 'LED_DIN': 'wd', 'LED_PWR': 'wd', 'Q1_GATE': 'wd',
+              'VBAT_SENSE': 'wa', 'POT_W': 'wa', '3V3': 'wa', 'KEY': 'wk', 'KEY_DRV': 'wk' };
+  var CNAME = { w5: 'червоний', wg: 'чорний', wd: 'теракотовий', wa: 'оливковий', wk: 'синьо-сірий' };
+  var THICK = { 'BAT+': 1, 'GND': 1, '5V_OUT': 1, '5V_SW': 1, 'LED_5V': 1 };
+  var ONBOARD = { 'U1.BAT-|U1.GND': 1 };
+  // Порядок прокладання: ланцюжки; кожен наступний починається з уже підключеного піна. Без запису — порядок із nets.js
+  var CHAIN = {
+    'GND/v1': [['BT1.-', 'U1.BAT-', 'U1.GND', 'C1.2', 'LED1.GND'], ['U1.GND', 'U2.GND'], ['U1.GND', 'C3.2', 'U3.OE', 'U3.GND', 'Q2.S', 'R5.2'],
+               ['U1.GND', 'C2.2', 'R3.2', 'RV1.3', 'SW1.2'], ['C2.2', 'R6.2', 'Q3.S']],
+    'GND/v2': [['BT1.-', 'U1.BAT-', 'U1.GND', 'C1.2', 'LED1.GND'], ['U1.GND', 'U2.GND'], ['U1.GND', 'C3.2', 'U3.OE', 'U3.GND'],
+               ['U1.GND', 'C2.2', 'R3.2', 'RV2.3']],
+    'VBAT_SENSE/both': [['U2.GPIO1', 'R2.2', 'R3.1']],
+    '5V_OUT/v1': [['U1.VOUT', 'U2.5V'], ['U1.VOUT', 'C3.1', 'U3.VCC'], ['U1.VOUT', 'R4.1', 'Q1.S']],
+    '5V_SW/v2': [['RV2.S2', 'U2.5V'], ['RV2.S2', 'C3.1', 'U3.VCC'], ['RV2.S2', 'C1.1', 'LED1.5V']],
+    'LED_5V/v1': [['Q1.D', 'C1.1', 'LED1.5V']],
+    'Q1_GATE/v1': [['Q1.G', 'R4.2', 'Q2.D']],
+    'LED_PWR/v1': [['U2.GPIO6', 'R5.1', 'Q2.G']],
+    'KEY_DRV/v1': [['U2.GPIO7', 'R6.1', 'Q3.G']]
+  };
+  // Траса дроту: h X / v Y — повороти від першого піна; решту до другого піна добудовує route()
+  var R = {
+    'BT1.+>U1.BAT+': 'h288', 'U1.BAT+>R2.1': 'h288 v540', 'BT1.->U1.BAT-': 'h280',
+    'U1.GND>C1.2': 'h440 v470', 'U1.GND>U2.GND': 'h440 v124', 'U1.GND>C3.2': 'h440 v654',
+    'U3.OE>U3.GND': 'v646', 'U3.GND>Q2.S': 'v646 h616', 'Q2.S>R5.2': 'v686 h690',
+    'U1.GND>C2.2': 'h440 v754', 'C2.2>R3.2': 'v754', 'R3.2>RV1.3': 'v754 h346 v524', 'R3.2>RV2.3': 'v754 h346 v524',
+    'RV1.3>SW1.2': 'v586', 'C2.2>R6.2': 'v940',
+    'U2.GPIO1>R2.2': 'h480 v650', 'U2.3V3>RV1.1': 'h470 v500', 'U2.3V3>RV2.1': 'h470 v500',
+    'U2.GPIO0>C2.1': 'h490 v664', 'C2.1>RV1.2': 'v512', 'C2.1>RV2.2': 'v512',
+    'U1.VOUT>U2.5V': 'h500', 'U1.VOUT>C3.1': 'h450 v548', 'U1.VOUT>R4.1': 'h450 v800',
+    'U1.VOUT>RV2.S1': 'h450 v760', 'RV2.S2>U2.5V': 'v772 h460 v100', 'RV2.S2>C3.1': 'v772 h460 v548', 'RV2.S2>C1.1': 'v784 h736',
+    'Q1.D>C1.1': 'v700 h736', 'R4.2>Q2.D': 'h630',
+    'U2.GPIO6>R5.1': 'h716 v776', 'R5.1>Q2.G': 'v776 h660 v704',
+    'U1.KEY>SW1.1': 'v536', 'SW1.1>Q3.D': 'v622 h336 v846', 'U2.GPIO7>R6.1': 'h726 v940',
+    'U2.GPIO10>U3.A': 'h706 v660', 'U3.Y>R1.1': 'v576', 'R1.2>LED1.DIN': 'h744 v500'
+  };
+  function route(A, B, spec) {
+    var p = [[A.x, A.y]], x = A.x, y = A.y, last = '';
+    if (!spec && A.x !== B.x && A.y !== B.y && Math.abs(A.x - B.x) + Math.abs(A.y - B.y) < 70) return 'M' + A.x + ' ' + A.y + 'L' + B.x + ' ' + B.y; // коротка перемичка
+    (spec || (A.d === 'l' || A.d === 'r' ? 'h' + (A.x + B.x) / 2 : 'v' + (A.y + B.y) / 2)).split(' ').forEach(function (s) {
+      last = s[0]; if (last === 'h') x = +s.slice(1); else y = +s.slice(1); p.push([x, y]);
+    });
+    if (x !== B.x && y !== B.y) p.push(last === 'h' ? [x, B.y] : [B.x, y]);
+    p.push([B.x, B.y]);
+    // кути з невеликим заокругленням
+    var d = 'M' + p[0][0] + ' ' + p[0][1];
+    for (var k = 1; k < p.length - 1; k++) {
+      var P0 = p[k - 1], P1 = p[k], P2 = p[k + 1];
+      var l1 = Math.abs(P1[0] - P0[0]) + Math.abs(P1[1] - P0[1]), l2 = Math.abs(P2[0] - P1[0]) + Math.abs(P2[1] - P1[1]), rr = Math.min(6, l1 / 2, l2 / 2);
+      if (!l1 || !l2) continue;
+      var ax = P1[0] - Math.sign(P1[0] - P0[0]) * rr, ay = P1[1] - Math.sign(P1[1] - P0[1]) * rr;
+      var bx = P1[0] + Math.sign(P2[0] - P1[0]) * rr, by = P1[1] + Math.sign(P2[1] - P1[1]) * rr;
+      d += 'L' + ax + ' ' + ay + 'Q' + P1[0] + ' ' + P1[1] + ' ' + bx + ' ' + by;
+    }
+    return d + 'L' + B.x + ' ' + B.y;
+  }
+  function inV(tag, v) { return tag === 'both' || tag === v; }
+  function edges(n, bad) {
+    var ch = CHAIN[n.name + '/' + n.variant] || [n.pins], seen = {}, out = [], member = {};
+    n.pins.forEach(function (p) { member[p] = 1; });
+    ch.forEach(function (c, k) {
+      if (k && !seen[c[0]]) bad.push(n.name + ': ланцюжок починається з непідключеного ' + c[0]);
+      c.forEach(function (p, j) {
+        if (!member[p]) bad.push(n.name + ': ' + p + ' не в мережі');
+        if (j) { if (seen[p]) bad.push(n.name + ': ' + p + ' двічі'); out.push([c[j - 1], p]); }
+        seen[p] = 1;
+      });
+    });
+    n.pins.forEach(function (p) { if (!seen[p]) bad.push(n.name + ': ' + p + ' без дроту'); });
+    return out;
+  }
+
+  function check(v, bad) {
+    var drawn = {}, inNets = {}, nPins = 0, nNets = 0;
+    svg.querySelectorAll('[data-pin]').forEach(function (el) {
+      var g = el.closest('[data-variant]'), p = el.getAttribute('data-pin');
+      if (g && g.getAttribute('data-variant') !== v) return;
+      if (drawn[p]) bad.push('двічі на монтажі: ' + p);
+      drawn[p] = 1;
+    });
+    N.nets.forEach(function (n) {
+      if (!inV(n.variant, v)) return;
+      nNets++;
+      n.pins.forEach(function (p) {
+        var ref = p.split('.')[0], pin = p.slice(ref.length + 1), part = N.parts[ref];
+        if (inNets[p]) bad.push('пін у двох мережах: ' + p);
+        inNets[p] = 1; nPins++;
+        if (!part || !(pin in part.pins)) bad.push('немає в parts: ' + p);
+        else if (!inV(part.variant, v)) bad.push('деталь іншого варіанта: ' + p);
+      });
+    });
+    Object.keys(drawn).forEach(function (p) { if (!inNets[p]) bad.push('на монтажі, але не в LAMP_NETS: ' + p); });
+    Object.keys(inNets).forEach(function (p) { if (!drawn[p]) bad.push('у LAMP_NETS, але не на монтажі: ' + p); });
+    return { pins: nPins, nets: nNets };
+  }
+
+  function who(p) {
+    var ref = p.split('.')[0], pin = p.slice(ref.length + 1), part = N.parts[ref] || { name: '', pins: {} };
+    var d = (P[p] && P[p].label) || pin, note = part.pins[pin];
+    return '<b>' + esc(ref + ' · ' + d) + '</b><span class="sub">' + esc(part.name + (note ? ' — ' + note : '')) + '</span>';
+  }
+
+  var out = document.getElementById('check'), tbody = document.getElementById('rows'), wires = document.getElementById('wires');
+  function render(v) {
+    document.body.setAttribute('data-v', v);
+    var bad = [], w = [], rows = [], k = 0, res = check(v, bad);
+    N.nets.forEach(function (n) {
+      if (!inV(n.variant, v)) return;
+      var c = COL[n.name] || 'wd', th = THICK[n.name] ? ' thick' : '', g = THICK[n.name] ? 'AWG22' : 'AWG28';
+      edges(n, bad).forEach(function (e) {
+        var A = P[e[0]], B = P[e[1]], on = ONBOARD[e[0] + '|' + e[1]] || ONBOARD[e[1] + '|' + e[0]];
+        if (!A || !B) return; // відсутній пін уже в списку перевірки
+        var d = route(A, B, R[e[0] + '>' + e[1]]);
+        w.push('<path class="halo' + th + '" d="' + d + '"/><path class="wire c-' + c + (on ? ' onboard' : th) + '" d="' + d + '"><title>' + esc(n.name + ': ' + e[0] + ' → ' + e[1]) + '</title></path>');
+        rows.push('<tr><td class="n">' + (++k) + '</td><td data-label="звідки">' + who(e[0]) + '</td><td data-label="куди">' + who(e[1]) + '</td><td data-label="дріт">' +
+          (on ? '<span class="sw thin c-' + c + '" style="border-top-style:dotted"></span>на модулі, без дроту' : '<span class="sw' + (th ? '' : ' thin') + ' c-' + c + '"></span>' + CNAME[c] + ' · ' + g) +
+          '</td><td data-label="мережа" class="sub">' + esc(n.name) + '</td></tr>');
+      });
+    });
+    wires.innerHTML = w.join('');
+    tbody.innerHTML = rows.join('');
+    out.className = 'check' + (bad.length ? ' bad' : '');
+    out.textContent = bad.length
+      ? 'Монтаж і LAMP_NETS розходяться (' + v.toUpperCase() + '): ' + bad.join('; ')
+      : 'перевірено: ' + res.pins + ' пінів у ' + res.nets + ' мережах збігаються з LAMP_NETS, ' + k + ' з’єднань';
+  }
+
+  var KEY = 'lamp-variant', v0 = 'v1';
+  try { var s = localStorage.getItem(KEY); if (s === 'v1' || s === 'v2') v0 = s; } catch (e) {}
+  document.querySelectorAll('input[name="variant"]').forEach(function (el) {
+    el.checked = el.value === v0;
+    el.addEventListener('change', function () { try { localStorage.setItem(KEY, el.value); } catch (e) {} render(el.value); });
+  });
+  render(v0);
+})();
+</script>
+</body>
+</html>
