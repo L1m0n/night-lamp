@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Рендер лампи</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:opsz,wght@6..72,400&display=swap">
+<link rel="stylesheet" href="assets/paper.css">
+<style>
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 0 0 20px; }
+  .range { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
+  .range input { width: 160px; margin: 0; accent-color: var(--accent); }
+  .stage { position: relative; height: clamp(440px, 74vh, 780px); border-bottom: 1px solid var(--rule); }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+  .fallback { margin: 0; padding: 48px 0; color: var(--muted); max-width: 32em; }
+  .notes { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; margin: 14px 0 0; font-size: 12px; color: var(--faint); }
+  @media (max-width: 700px) { .stage { height: 66vh; min-height: 380px; } .range input { width: 130px; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <nav class="nav" aria-label="Розділи">
+    <a href="parts.html">Комплектуючі</a>
+    <a href="parts-3d.html">Деталі 3D</a>
+    <a href="render.html" aria-current="page">Рендер</a>
+    <a href="schematic.html">Схема</a>
+    <a href="wiring.html">Підключення</a>
+  </nav>
+
+  <p class="eyebrow">Нічна лампа · збірка в масштабі</p>
+  <h1>Рендер</h1>
+  <p class="lede">Ціла лампа на тумбочці: бетонна шайба, пастельна чаша й напівпрозорий плафон, що світиться від колони зі стрічкою. Розберіть її повзунком, щоб побачити, як деталі сідають одна в одну.</p>
+
+  <div class="bar">
+    <div class="toggle" role="radiogroup" aria-label="Світло">
+      <label><input type="radio" name="light" value="on" checked><span>Світиться</span></label>
+      <label><input type="radio" name="light" value="off"><span>Вимкнено</span></label>
+    </div>
+    <div class="toggle" role="radiogroup" aria-label="Варіант">
+      <label><input type="radio" name="variant" value="V1"><span>V1</span></label>
+      <label><input type="radio" name="variant" value="V2" checked><span>V2</span></label>
+    </div>
+    <label class="range">Розібрати <input type="range" id="explode" min="0" max="1" step="0.01" value="0"></label>
+  </div>
+
+  <div class="stage" id="stage"></div>
+  <p class="notes"><span id="vnote">V2: RK097NS з вимикачем, кришка колони.</span><span>Тягніть — обертати, колесо — масштаб. Висота лампи ≈ 245 мм.</span></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="assets/models.js"></script>
+<script src="assets/lamp3d.js"></script>
+<script>
+(function () {
+  var host = document.getElementById('stage');
+  if (!Lamp3D.ready()) {
+    Lamp3D.fallback(host, 'Тут мав бути тривимірний рендер лампи, але цей браузер не підтримує WebGL (або бібліотеки не завантажились). Лампа: бетонна шайба Ø80, пастельна чаша Ø160, напівпрозорий плафон і дімер зверху, висота ≈ 245 мм.');
+    return;
+  }
+
+  // Рознесення по z при «Розібрати» = 1, мм. Шайба лишається на тумбочці, решта підіймається.
+  var LIFT = {
+    puck: 0, pcb: 32, bowl: 58, chassis: 100, batteries: 100, reflector: 135,
+    column: 165, knob_v1_guide: 165, knob_v1_carriage: 165, knob_v2_cap: 165, pot_v1: 165, pot_v2: 165,
+    shade_top: 265, dimmer: 345
+  };
+  var VARIANT = { knob_v1_carriage: 'V1', knob_v1_guide: 'V1', pot_v1: 'V1', knob_v2_cap: 'V2', pot_v2: 'V2' };
+  var WARM = new THREE.Color(0xffa95c); // ≈ 2700 K
+  // увімкнено: розсіювання притлумлене, щоб колір плафона давало світло зсередини, а не денне
+  var SHADE_OFF = new THREE.Color(0xfbf6ee), SHADE_ON = new THREE.Color(0xb3a28e);
+
+  var v = Lamp3D.stage(host, 28), scene = v.scene, camera = v.camera, controls = v.controls;
+  controls.maxPolarAngle = Math.PI / 2 - 0.06; // не під стіл
+  controls.minDistance = 220; controls.maxDistance = 1800;
+
+  var root = new THREE.Group();
+  root.rotation.x = -Math.PI / 2; // z вгору → y вгору
+  root.position.y = -5;           // площина тумбочки z = 5 → y = 0
+  scene.add(root);
+
+  var meshes = {};
+  Object.keys(LIFT).forEach(function (n) {
+    if (n === 'shade_top') return;
+    var m = new THREE.Mesh(Lamp3D.geom(n), Lamp3D.material(n));
+    root.add(m); meshes[n] = [m];
+  });
+
+  // Плафон: дві оболонки (внутрішня, потім зовнішня), щоб прозорість сортувалась без артефактів
+  var shadeMat = new THREE.MeshStandardMaterial({
+    color: 0xfbf6ee, roughness: 0.9, transparent: true, opacity: 0.94, depthWrite: false,
+    emissive: 0xffc98f, emissiveIntensity: 0
+  });
+  // Світіння: найяскравіше на висоті стрічок, згасає до верху й до шва; посередині (де за стінкою колона) світліше, ніж на краях
+  shadeMat.onBeforeCompile = function (sh) {
+    sh.vertexShader = 'varying float vZ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vZ = position.z;');
+    sh.fragmentShader = 'varying float vZ;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\n totalEmissiveRadiance *= (0.35 + 0.65 * smoothstep(44.0, 95.0, vZ) * (1.0 - 0.45 * smoothstep(150.0, 250.0, vZ)))'
+      + ' * (0.55 + 0.6 * pow(abs(dot(normal, normalize(vViewPosition))), 1.5));');
+  };
+  var shadeBack = shadeMat.clone(); shadeBack.side = THREE.BackSide; shadeBack.onBeforeCompile = shadeMat.onBeforeCompile;
+  meshes.shade_top = [new THREE.Mesh(Lamp3D.geom('shade_top'), shadeBack), new THREE.Mesh(Lamp3D.geom('shade_top'), shadeMat)];
+  meshes.shade_top[0].renderOrder = 2; meshes.shade_top[1].renderOrder = 3;
+  root.add(meshes.shade_top[0], meshes.shade_top[1]);
+  var columnMat = meshes.column[0].material;
+  columnMat.emissive = WARM.clone();
+
+  // Тепле світло вздовж колони — рухається разом із колоною
+  var bulbs = [80, 140, 200].map(function (z) {
+    var p = new THREE.PointLight(WARM, 0, 520, 1.4); p.userData.z = z; root.add(p); return p;
+  });
+  var hemi = new THREE.HemisphereLight(0xfff8ee, 0xd8cdbc, 0.8);
+  var sun = new THREE.DirectionalLight(0xfff4e6, 0.9); sun.position.set(320, 520, 260);
+  var fill = new THREE.DirectionalLight(0xe6edf5, 0.3); fill.position.set(-400, 200, -300);
+  scene.add(hemi, sun, fill);
+
+  // «Тумбочка»: самі лише мʼякі плями на папері — контактна тінь і тепла пляма світла
+  function radial(stops) {
+    var c = document.createElement('canvas'); c.width = c.height = 256;
+    var x = c.getContext('2d'), g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+    stops.forEach(function (s) { g.addColorStop(s[0], s[1]); });
+    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+    var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+  }
+  function spot(tex, size, y, order) {
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(size, size),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }));
+    m.rotation.x = -Math.PI / 2; m.position.y = y; m.renderOrder = order; scene.add(m); return m;
+  }
+  var pool = spot(radial([[0, 'rgba(255,176,100,.5)'], [0.3, 'rgba(255,176,100,.2)'], [0.65, 'rgba(255,176,100,.05)'], [1, 'rgba(255,176,100,0)']]), 440, 0.1, 0);
+  spot(radial([[0, 'rgba(60,45,30,.30)'], [0.45, 'rgba(60,45,30,.14)'], [1, 'rgba(60,45,30,0)']]), 330, 0.2, 1);
+  spot(radial([[0, 'rgba(40,30,20,.55)'], [0.55, 'rgba(40,30,20,.25)'], [1, 'rgba(40,30,20,0)']]), 150, 0.3, 1);
+  // Ореол навколо плафона
+  var halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: radial([[0, 'rgba(255,196,130,.5)'], [0.4, 'rgba(255,196,130,.16)'], [1, 'rgba(255,196,130,0)']]),
+    depthWrite: false, toneMapped: false, opacity: 0
+  }));
+  halo.scale.set(400, 400, 1); halo.renderOrder = 1; root.add(halo);
+
+  // Стан
+  var target = { glow: 1, t: 0 }, cur = { glow: 1, t: 0 };
+  function setVariant(id) {
+    for (var n in VARIANT) meshes[n].forEach(function (m) { m.visible = VARIANT[n] === id; });
+    document.getElementById('vnote').textContent = id === 'V1'
+      ? 'V1: B100K на каретці з напрямною, натиск дімера вмикає IP5306.'
+      : 'V2: RK097NS з вимикачем, кришка колони.';
+  }
+  document.querySelectorAll('input[name="light"]').forEach(function (r) {
+    r.addEventListener('change', function () { target.glow = r.value === 'on' ? 1 : 0; });
+  });
+  document.querySelectorAll('input[name="variant"]').forEach(function (r) {
+    r.addEventListener('change', function () { setVariant(r.value); });
+  });
+  var slider = document.getElementById('explode');
+  slider.addEventListener('input', function () { target.t = +slider.value; });
+  setVariant(document.querySelector('input[name="variant"]:checked').value);
+  target.glow = cur.glow = document.querySelector('input[name="light"]:checked').value === 'on' ? 1 : 0;
+  target.t = cur.t = +slider.value;
+
+  // Камера: 3/4 трохи згори; відстань і ціль ростуть разом із рознесенням
+  function dist(t) { return Math.max(640, 520 / v.aspect) * (1 + 1.05 * t); }
+  function aimY(t) { return 118 + 180 * t; }
+  var shownT = cur.t;
+  function home() {
+    controls.target.set(0, aimY(cur.t), 0);
+    camera.position.setFromSphericalCoords(dist(cur.t), 1.2, 0.62).add(controls.target);
+    shownT = cur.t;
+  }
+  home();
+  // після ресайзу (зокрема адресного рядка на телефоні) не скидати ракурс, який користувач уже покрутив
+  var moved = false;
+  controls.addEventListener('start', function () { moved = true; });
+  v.onResize = function () { if (!moved) home(); };
+
+  function apply(dt) {
+    var k = 1 - Math.exp(-dt * 7);
+    cur.glow += (target.glow - cur.glow) * k;
+    cur.t += (target.t - cur.t) * k;
+    var g = cur.glow, t = cur.t;
+
+    for (var n in meshes) meshes[n].forEach(function (m) { m.position.z = LIFT[n] * t; });
+    bulbs.forEach(function (b) { b.intensity = 1.25 * g; b.position.z = b.userData.z + LIFT.column * t; });
+    halo.position.z = 150 + LIFT.shade_top * t * 0.8;
+    halo.material.opacity = 0.7 * g;
+    pool.material.opacity = g;
+
+    shadeMat.emissiveIntensity = shadeBack.emissiveIntensity = 1.05 * g;
+    shadeMat.color.lerpColors(SHADE_OFF, SHADE_ON, g); shadeBack.color.copy(shadeMat.color);
+    shadeMat.opacity = 0.94 + 0.04 * g;
+    columnMat.emissiveIntensity = 1.6 * g;
+    hemi.intensity = 0.5 - 0.3 * g;
+    sun.intensity = 0.85 - 0.68 * g;
+    fill.intensity = 0.3 - 0.15 * g;
+
+    // камера йде за рознесенням, зберігаючи кут, який обрав користувач
+    if (Math.abs(t - shownT) > 1e-4) {
+      var off = camera.position.clone().sub(controls.target).multiplyScalar(dist(t) / dist(shownT));
+      controls.target.y = aimY(t);
+      camera.position.copy(controls.target).add(off);
+      shownT = t;
+    }
+  }
+
+  var clock = new THREE.Clock();
+  v.renderer.setAnimationLoop(function () {
+    apply(Math.min(clock.getDelta(), 0.1));
+    controls.update();
+    v.renderer.render(scene, camera);
+  });
+})();
+</script>
+</body>
+</html>

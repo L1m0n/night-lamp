@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Деталі лампи в 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:opsz,wght@6..72,400&display=swap">
+<link rel="stylesheet" href="assets/paper.css">
+<style>
+  .viewer { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 0 40px; }
+  .plist h2 { margin: 0 0 6px; font-size: 19px; }
+  .plist section + section { margin-top: 26px; }
+  .plist ul { list-style: none; margin: 0; padding: 0; }
+  .plist button {
+    display: block; width: 100%; padding: 7px 0; border: 0; border-bottom: 1px solid var(--rule);
+    background: none; font: inherit; font-size: 14px; color: var(--muted); text-align: left; cursor: pointer;
+  }
+  .plist button:hover { color: var(--ink); }
+  .plist button[aria-pressed="true"] { color: var(--accent); }
+  .stage { position: relative; height: clamp(360px, 64vh, 600px); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+  .fallback { margin: 0; padding: 48px 0; color: var(--muted); max-width: 32em; }
+  .cap { margin-top: 18px; }
+  .cap h3 { margin: 0 0 4px; font-size: 26px; }
+  .cap dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 16px; margin: 0; font-size: 14px; }
+  .cap dt { color: var(--faint); }
+  .cap dd { margin: 0; }
+  .hint { margin: 14px 0 0; font-size: 12px; color: var(--faint); }
+
+  /* Вузько: список — горизонтальна стрічка над вʼюером */
+  @media (max-width: 700px) {
+    .viewer { grid-template-columns: minmax(0, 1fr); }
+    .plist { display: flex; gap: 0 18px; overflow-x: auto; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+    .plist section { display: flex; align-items: baseline; gap: 0 14px; flex: none; }
+    .plist section + section { margin-top: 0; }
+    .plist h2 { margin: 0; font-size: 12px; font-family: "Inter", system-ui, sans-serif; color: var(--faint); white-space: nowrap; }
+    .plist ul { display: flex; gap: 0 14px; }
+    .plist button { width: auto; white-space: nowrap; border-bottom: 1px solid transparent; }
+    .plist button[aria-pressed="true"] { border-bottom-color: var(--accent); }
+    .stage { height: 62vh; min-height: 320px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <nav class="nav" aria-label="Розділи">
+    <a href="parts.html">Комплектуючі</a>
+    <a href="parts-3d.html" aria-current="page">Деталі 3D</a>
+    <a href="render.html">Рендер</a>
+    <a href="schematic.html">Схема</a>
+    <a href="wiring.html">Підключення</a>
+  </nav>
+
+  <p class="eyebrow">Нічна лампа · моделі</p>
+  <h1>Деталі 3D</h1>
+  <p class="lede">Кожна деталь окремо, в тих самих координатах, що й у збірці. Оберіть деталь у списку — розміри рахуються з її геометрії.</p>
+
+  <div class="viewer">
+    <nav class="plist" id="plist" aria-label="Деталі"></nav>
+    <div>
+      <div class="stage" id="stage"></div>
+      <div class="cap" aria-live="polite">
+        <h3 id="c-name">—</h3>
+        <dl>
+          <dt>матеріал</dt><dd id="c-mat">—</dd>
+          <dt>габарити</dt><dd id="c-dim">—</dd>
+          <dt>виготовлення</dt><dd id="c-kind">—</dd>
+        </dl>
+      </div>
+      <p class="hint">Тягніть, щоб обертати; колесо або два пальці — масштаб.</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="assets/models.js"></script>
+<script src="assets/lamp3d.js"></script>
+<script>
+(function () {
+  var KEY = 'lamp-parts3d-sel';
+  var INFO = Lamp3D.INFO, host = document.getElementById('stage'), list = document.getElementById('plist');
+  var names = Object.keys(INFO);
+
+  // Список деталей за групами
+  var buttons = {};
+  ['Друк', 'Лиття', 'Покупні (макети)'].forEach(function (g) {
+    var sec = document.createElement('section'), h = document.createElement('h2'), ul = document.createElement('ul');
+    h.textContent = g;
+    sec.append(h, ul);
+    names.filter(function (n) { return INFO[n][3] === g; }).forEach(function (n) {
+      var li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.textContent = INFO[n][0]; b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () { show(n); });
+      li.appendChild(b); ul.appendChild(li); buttons[n] = b;
+    });
+    list.appendChild(sec);
+  });
+
+  var sel = names[0];
+  try { var s = localStorage.getItem(KEY); if (s && INFO[s]) sel = s; } catch (e) {}
+
+  var view = null, mesh = null;
+  if (Lamp3D.ready()) {
+    view = Lamp3D.stage(host, 30);
+    view.scene.add(new THREE.HemisphereLight(0xfff8ee, 0xcfc3b2, 0.5));
+    var key = new THREE.DirectionalLight(0xfff3e4, 1.1); key.position.set(1, 1.6, 1.2);
+    var rim = new THREE.DirectionalLight(0xe8eef5, 0.35); rim.position.set(-1.2, 0.6, -1);
+    view.scene.add(key, rim);
+    view.root = new THREE.Group();
+    view.root.rotation.x = -Math.PI / 2; // z вгору → y вгору
+    view.scene.add(view.root);
+    view.renderer.setAnimationLoop(function () { view.controls.update(); view.renderer.render(view.scene, view.camera); });
+  } else {
+    Lamp3D.fallback(host, 'Тут мала бути тривимірна деталь, але цей браузер не підтримує WebGL (або бібліотеки не завантажились). Назва, матеріал і розміри — під цим полем.');
+  }
+
+  function fmt(v) { return v < 10 ? v.toFixed(1).replace('.', ',') : String(Math.round(v)); }
+
+  function show(n) {
+    sel = n;
+    try { localStorage.setItem(KEY, n); } catch (e) {}
+    for (var k in buttons) buttons[k].setAttribute('aria-pressed', String(k === n));
+    var i = INFO[n];
+    document.getElementById('c-name').textContent = i[0];
+    document.getElementById('c-mat').textContent = i[1];
+    document.getElementById('c-kind').textContent = i[2];
+    if (!view) { document.getElementById('c-dim').textContent = 'потрібен WebGL'; return; }
+
+    var g = Lamp3D.geom(n), bb = g.boundingBox, size = bb.getSize(new THREE.Vector3());
+    document.getElementById('c-dim').textContent = fmt(size.x) + ' × ' + fmt(size.y) + ' × ' + fmt(size.z) + ' мм (ш × г × в)';
+    if (mesh) view.root.remove(mesh);
+    mesh = new THREE.Mesh(g, Lamp3D.material(n));
+    mesh.position.copy(bb.getCenter(new THREE.Vector3())).negate(); // деталь по центру
+    view.root.add(mesh);
+    frame();
+  }
+
+  // Камера 3/4 зверху, відстань — щоб сфера деталі влізла по вужчій стороні
+  function frame() {
+    moved = false;
+    var r = mesh.geometry.boundingBox.getSize(new THREE.Vector3()).length() / 2;
+    var half = Math.tan(view.camera.fov * Math.PI / 360), d = r / half / Math.min(1, view.aspect) * 0.95;
+    view.controls.target.set(0, 0, 0);
+    view.camera.position.set(0.55, 0.45, 0.7).normalize().multiplyScalar(d);
+    view.camera.near = d / 50; view.camera.far = d * 10; view.camera.updateProjectionMatrix();
+    view.controls.minDistance = d * 0.35; view.controls.maxDistance = d * 3;
+  }
+  // ресайз (зокрема адресного рядка на телефоні) не скидає ракурс, якщо деталь уже покрутили
+  var moved = false;
+  if (view) {
+    view.controls.addEventListener('start', function () { moved = true; });
+    view.onResize = function () { if (mesh && !moved) frame(); };
+  }
+
+  show(sel);
+})();
+</script>
+</body>
+</html>
