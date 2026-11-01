@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Збирає всі STL лампи в case/stl/. Падає на першій помилці або порушеному assert.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+mkdir -p case/stl
+for p in shade_top bowl puck puck_core chassis reflector column knob_v1_carriage knob_v1_guide knob_v2_cap dimmer \
+         batteries pcb pot_v1 pot_v2; do
+  echo "== $p"
+  openscad --hardwarnings --export-format binstl -o "case/stl/$p.stl" -D "part=\"$p\"" case/lamp.scad
+done
