@@ -46,7 +46,7 @@
   </div>
 
   <div class="stage" id="stage"></div>
-  <p class="notes"><span id="vnote">V2: RK097NS з вимикачем, кришка колони.</span><span>Тягніть — обертати, колесо — масштаб. Висота лампи ≈ 245 мм.</span></p>
+  <p class="notes"><span id="vnote">V2: RK097NS з вимикачем, кришка колони.</span><span>Тягніть — обертати, колесо — масштаб. Висота лампи ≈ 185 мм.</span></p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
@@ -58,15 +58,15 @@
 (function () {
   var host = document.getElementById('stage');
   if (!Lamp3D.ready()) {
-    Lamp3D.fallback(host, 'Тут мав бути тривимірний рендер лампи, але цей браузер не підтримує WebGL (або бібліотеки не завантажились). Лампа: бетонна шайба Ø80, пастельна чаша Ø160, напівпрозорий плафон і дімер зверху, висота ≈ 245 мм.');
+    Lamp3D.fallback(host, 'Тут мав бути тривимірний рендер лампи, але цей браузер не підтримує WebGL (або бібліотеки не завантажились). Лампа: бетонна шайба Ø80, пастельна чаша Ø123, напівпрозорий плафон і дімер зверху, висота ≈ 185 мм.');
     return;
   }
 
   // Рознесення по z при «Розібрати» = 1, мм. Шайба лишається на тумбочці, решта підіймається.
   var LIFT = {
-    puck: 0, pcb: 32, bowl: 58, chassis: 100, batteries: 100, reflector: 135,
-    column: 165, knob_v1_guide: 165, knob_v1_carriage: 165, knob_v2_cap: 165, pot_v1: 165, pot_v2: 165,
-    shade_top: 265, dimmer: 345
+    puck: 0, pcb: 25, bowl: 45, chassis: 75, batteries: 75, reflector: 100,
+    column: 125, knob_v1_guide: 125, knob_v1_carriage: 125, knob_v2_cap: 125, pot_v1: 125, pot_v2: 125,
+    shade_top: 200, dimmer: 260
   };
   var VARIANT = { knob_v1_carriage: 'V1', knob_v1_guide: 'V1', pot_v1: 'V1', knob_v2_cap: 'V2', pot_v2: 'V2' };
   var WARM = new THREE.Color(0xffa95c); // ≈ 2700 K
@@ -75,7 +75,7 @@
 
   var v = Lamp3D.stage(host, 28), scene = v.scene, camera = v.camera, controls = v.controls;
   controls.maxPolarAngle = Math.PI / 2 - 0.06; // не під стіл
-  controls.minDistance = 220; controls.maxDistance = 1800;
+  controls.minDistance = 160; controls.maxDistance = 1800;
 
   var root = new THREE.Group();
   root.rotation.x = -Math.PI / 2; // z вгору → y вгору
@@ -98,7 +98,7 @@
   shadeMat.onBeforeCompile = function (sh) {
     sh.vertexShader = 'varying float vZ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vZ = position.z;');
     sh.fragmentShader = 'varying float vZ;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>',
-      '#include <emissivemap_fragment>\n totalEmissiveRadiance *= (0.35 + 0.65 * smoothstep(44.0, 95.0, vZ) * (1.0 - 0.45 * smoothstep(150.0, 250.0, vZ)))'
+      '#include <emissivemap_fragment>\n totalEmissiveRadiance *= (0.35 + 0.65 * smoothstep(44.0, 75.0, vZ) * (1.0 - 0.45 * smoothstep(110.0, 190.0, vZ)))'
       + ' * (0.35 + 0.9 * pow(abs(dot(normal, normalize(vViewPosition))), 2.5));');
   };
   var shadeBack = shadeMat.clone(); shadeBack.side = THREE.BackSide; shadeBack.onBeforeCompile = shadeMat.onBeforeCompile;
@@ -111,7 +111,7 @@
   columnMat.emissive = WARM.clone();
 
   // Тепле світло вздовж колони — рухається разом із колоною
-  var bulbs = [80, 140, 200].map(function (z) {
+  var bulbs = [70, 105, 140].map(function (z) {
     var p = new THREE.PointLight(WARM, 0, 520, 1.4); p.userData.z = z; root.add(p); return p;
   });
   var hemi = new THREE.HemisphereLight(0xfff8ee, 0xd8cdbc, 0.8);
@@ -140,13 +140,13 @@
     map: radial([[0, 'rgba(255,196,130,.5)'], [0.4, 'rgba(255,196,130,.16)'], [1, 'rgba(255,196,130,0)']]),
     depthWrite: false, toneMapped: false, opacity: 0
   }));
-  halo.scale.set(400, 400, 1); halo.renderOrder = 1; root.add(halo);
+  halo.scale.set(300, 300, 1); halo.renderOrder = 1; root.add(halo);
   // Мʼяке ядро світла навколо колони — між задньою і передньою оболонками, тож видно його розмитим крізь плафон
   var core = new THREE.Sprite(new THREE.SpriteMaterial({
     map: radial([[0, 'rgba(255,170,90,1)'], [0.3, 'rgba(255,150,70,.55)'], [1, 'rgba(255,140,60,0)']]),
     depthWrite: false, toneMapped: false, opacity: 0, blending: THREE.AdditiveBlending
   }));
-  core.scale.set(110, 260, 1); core.renderOrder = 2.5; root.add(core);
+  core.scale.set(80, 180, 1); core.renderOrder = 2.5; root.add(core);
 
   // Стан
   var target = { glow: 1, t: 0 }, cur = { glow: 1, t: 0 };
@@ -173,8 +173,8 @@
   target.t = cur.t = +slider.value;
 
   // Камера: 3/4 трохи згори; відстань і ціль ростуть разом із рознесенням
-  function dist(t) { return Math.max(640, 520 / v.aspect) * (1 + 1.05 * t); }
-  function aimY(t) { return 118 + 180 * t; }
+  function dist(t) { return Math.max(480, 390 / v.aspect) * (1 + 1.05 * t); }
+  function aimY(t) { return 90 + 135 * t; }
   var shownT = cur.t;
   function home() {
     controls.target.set(0, aimY(cur.t), 0);
@@ -197,9 +197,9 @@
 
     for (var n in meshes) meshes[n].forEach(function (m) { m.position.z = LIFT[n] * t; });
     bulbs.forEach(function (b) { b.intensity = 1.25 * g; b.position.z = b.userData.z + LIFT.column * t; });
-    halo.position.z = 150 + LIFT.shade_top * t * 0.8;
+    halo.position.z = 110 + LIFT.shade_top * t * 0.8;
     halo.material.opacity = 0.7 * g;
-    core.position.z = 135 + LIFT.column * t;
+    core.position.z = 98 + LIFT.column * t;
     core.material.opacity = 0.9 * g;
     pool.material.opacity = g;
 

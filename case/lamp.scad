@@ -1,9 +1,9 @@
-// Нічна лампа на акумуляторах: шейдер зі STEP (Fusion), бетонна шайба, шасі з акумуляторами,
+// Нічна лампа на акумуляторах: шейдер за прототипом Lamp-v0.0.2 (Fusion), бетонна шайба, шасі з акумуляторами,
 // восьмигранна колона зі стрічкою, дімер угорі.
 //   openscad -D 'part="bowl"' -o bowl.stl lamp.scad      (усі деталі — tools/build.sh)
 //   openscad -D 'part="assembly"' -D variant=2 -o a.png lamp.scad
-// Усі деталі — в осі лампи і в координатах STEP: стіл z=5, шайба z 5…25, низ шейдера z=15
-// (лампа на 10 мм над столом). STL складаються у збірку без зсувів; друкувати — повернувши в слайсері.
+// Усі деталі — в осі лампи: стіл z=5, шайба z 5…25, низ шейдера z=15 (лампа на 10 мм над столом),
+// шейдер — профіль прототипу 175 мм, піднятий на 15. Найвища друкована деталь ≤ 180 (Bambu A1 mini). STL складаються у збірку без зсувів; друкувати — повернувши в слайсері.
 // Розміри в мм. Значення з позначкою «заміряти» — номінальні, звір зі своїми деталями.
 //
 // Вигляд згори: +X — USB-C у боці шайби, +Y — ESP32 і жолоб під дроти з колони.
@@ -12,19 +12,21 @@ part    = "assembly";  // shade_top, bowl, puck, puck_core, chassis, reflector, 
                        // knob_v1_guide, knob_v2_cap, dimmer, batteries, pcb, pot_v1, pot_v2, assembly, section
 variant = 2;           // вузол дімера для assembly/section: 1 — B100K з кнопкою, 2 — RK097NS з вимикачем
 
-/* [Шейдер зі STEP] */
-ring_z   = 15;       // дно-кільце шейдера (r 40…55); стіл на z=5
-fil_c    = [55, 40]; // центр заокруглення R25
-fil_r    = 25;
-belt_r   = 80;       // пояс z 40…50
-cut_z    = 50;       // розріз: чаша нижче, плафон вище — по верху поясу
-cone_top = [70.0227, 249.675];  // кінець конуса, далі заокруглення 0.5
-top_z    = 250.15;
+/* [Шейдер: профіль прототипу Lamp-v0.0.2, z + 15] */
+ring_z   = 15;              // дно шейдера (диск r50 з заокругленням R5); стіл на z=5
+base     = [50, 5];         // радіус дна, заокруглення
+low_k    = 0.2;             // нижній конус dr/dz: r54.9 → 61.5
+belt     = [61.5, 52];      // найширше ребро; по ньому розріз
+up_k     = 1 / 12;          // верхній конус dr/dz: r61.5 → 50.15
+top_fil  = 2;
+top_z    = 190;             // 175 + 15
+cut_z    = belt.y;
+belt_r   = belt.x;
 wall     = 2;
-plate_z  = [244.69, 246.69];    // верхня пластина
+plate_z  = [184.54, 186.54];  // верхня пластина
 plate_hole_d = 20;
-recess_r = 67.5;                // заглиблення під дімер
-collar   = [40, 42, 25];        // комір під шайбу: r внутрішній, r зовнішній, z центру заокруглення R2
+recess_r = 47.5;              // заглиблення під дімер
+collar   = [40, 42, 25];      // комір під шайбу: r внутрішній, r зовнішній, z центру заокруглення R2
 
 /* [Байонет] */
 lap      = 6;     // напуск плафона в чашу
@@ -53,7 +55,7 @@ chan_d   = 8;              // канал під дроти вгору, вихо�
 chan_x   = 6;
 
 /* [Шасі] */
-chassis_d   = 147;
+chassis_d   = 108;
 chassis_fit = 0.2;
 chassis_t   = 3;
 cell        = [55, 20, 10];  // Li-Pol 850 мА·год
@@ -65,15 +67,16 @@ groove = [6, 1.5];           // жолоб під дроти з колони д�
 cup_depth = 8;
 cup_wall  = 2;
 col_fit   = 0.2;
-refl = [150, 1.2];           // білий відбивач
+refl = [110, 1.2];           // білий відбивач: всередині манжети плафона
 
 /* [Колона] */
 col_face = 12.5;   // грань восьмигранника
-col_top  = 230;
+col_top  = 169.85;
 col_bore = 22;
 slot     = [6, 6];   // паз на нижньому торці: шини й дані з шасі в колону
 strip_z0  = 46;               // низ смуги (кінець з падами); смуга нижче відбивача, перший LED уже над ним
-strip_len = 10 * 1000 / 60;   // 10 LED при 60/м = 166.7
+leds      = 6;                // LED на грань; 8 граней → 48
+strip_len = leds * 1000 / 60;  // 6 LED при 60/м = 100
 strip_t   = 3;                // товщина смуги разом з LED і скотчем
 strip_pcb = 1.5;              // кінець смуги без LED, з пайкою — стоїть між акумуляторами
 pitch_led = 1000 / 60;
@@ -84,7 +87,7 @@ wire_gap  = 0.5;              // від торця смуги до краю от
 pot1_body  = [16, 7];      // корпус: діаметр, глибина від монтажної площини — заміряти
 pot1_bush  = 7;            // довжина втулки M7 — заміряти
 pot1_shaft = 15;           // вал від монтажної площини — заміряти
-pot1_face  = 229.5;        // монтажна площина (низ пластини каретки) → верх втулки 236.5
+pot1_face  = 169.35;       // монтажна площина (низ пластини каретки) → верх втулки 176.35
 sb         = [6.1, 3.6, 2.5];  // KFC-003A: ширина, глибина, висота разом зі штоком — заміряти
 sb_stroke  = 0.25;         // хід штока — заміряти
 v1_travel  = 0.4;          // хід каретки до упорів: шток 0.25 + запас, щоб не роздавити кнопку
@@ -95,13 +98,13 @@ fit        = 0.15;         // зазор ковзання/посадки
 pot2_body  = [10, 11.5, 11];  // корпус разом з вимикачем: ширина, довжина, глибина — заміряти
 pot2_bush  = 5;               // довжина втулки M7 — заміряти
 pot2_shaft = 15;              // вал від монтажної площини — заміряти
-bush_top   = 236;             // верх втулки
+bush_top   = 175.85;          // верх втулки
 bush_hole  = 7.2;
 
-/* [Дімер зі STEP] */
-dim_r    = 66.5;
-dim_z    = [247.69, 250.19];
-boss     = [9, 237.69];       // хвостовик: радіус, низ
+/* [Дімер] */
+dim_r    = 46.5;
+dim_z    = [187.54, 190.04];
+boss     = [9, 177.54];       // хвостовик: радіус, низ
 shaft_d  = 6.0;               // рифлений вал — заміряти
 shaft_press = 0.1;            // натяг
 shaft_hole  = 9;              // глибина отвору від низу хвостовика
@@ -109,22 +112,24 @@ shaft_hole  = 9;              // глибина отвору від низу х�
 $fn = 180;
 
 // --- похідні розміри ---
-k        = (belt_r - cone_top.x) / (cone_top.y - cut_z);    // нахил конуса dr/dz
-cone_in  = belt_r - wall * sqrt(1 + k * k);                 // внутрішній конус на z=50
-function in_r(z) = z < fil_c.y ? fil_c.x + sqrt(pow(fil_r - wall, 2) - pow(fil_c.y - z, 2))
-                 : z <= cut_z ? belt_r - wall : cone_in - k * (z - cut_z);
+function out_r(z) = z < ring_z + base.y * (1 - sin(atan(low_k))) ? base.x + sqrt(max(0, pow(base.y, 2) - pow(base.y + ring_z - z, 2)))
+                  : z <= cut_z ? belt_r - low_k * (cut_z - z) : belt_r - up_k * (z - cut_z);
+function in_r(z) = out_r(z) - wall * 1.02;                 // стінка по нормалі до конуса, із запасом
 col_flat  = col_face / (2 * tan(22.5));  // половина розміру під ключ
 chassis_z = collar.z + 2;                // шасі лежить на верху коміра
 deck_z    = chassis_z + chassis_t;       // верх диска шасі
 bat_top   = deck_z + 2 * cell.z;
 refl_z    = bat_top;                     // відбивач лежить на акумуляторах
 pinwheel_r = norm([1, 1] * (cell.x + cell.y) / 2);  // кут квадрата 75×75
+pocket_r  = in_r(deck_z) - 0.3;          // стінку під акумулятори обрізано по колу чаші
+esp_y     = (cell.x + cell.y) / 2 + bat_tol + pocket_wall[0] + 3 + esp.z / 2;  // ESP32 стоїть вертикально біля стінки вітряка
 pm_top    = usb_z + usb_below + ip5306.z;                   // стеля кишені = спина плати
 usb_hole  = plug + [2, 2] * plug_fit;                       // зенківка під корпус штекера
 pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_fit;  // край плати з USB-C: кути кишені ≥1.2 від боку шайби
 sock_front = pm_x1 + usb_over;                             // торець гнізда USB-C
 win_x0    = sock_front - 0.5;                              // дно зенківки: трохи за торцем гнізда
-sleeve_r  = belt_r - wall - lap_fit;                        // зовнішній радіус манжети плафона
+band_r    = in_r(cut_z - lap);                             // чаша під розрізом потовщена до циліндра під манжету
+sleeve_r  = band_r - lap_fit;                               // зовнішній радіус манжети плафона
 bay_z     = cut_z - lap / 2 - bay.y / 2;                    // низ ламелі
 bay_a     = bay.x / sleeve_r * 180 / PI;                    // ламель по дузі, градуси
 bore      = col_bore - 2 * fit - 2 * guide_wall;            // отвір напрямної V1
@@ -142,8 +147,8 @@ echo(str("Внутрішній радіус чаші: z=27 → ", in_r(27), ", z
 echo(str("Вал у хвостовику: V1 ", pot1_face + pot1_shaft - boss[1], ", V2 ", pot2_face + pot2_shaft - boss[1]));
 
 assert(pinwheel_r + 1 < in_r(bat_top), "вітряк акумуляторів вилазить за внутрішню стінку чаші");
-assert(norm([cell.x + cell.y, cell.x + cell.y] / 2 + [1, 1] * (bat_tol + pocket_wall[0])) < in_r(deck_z + pocket_wall[1]),
-       "стінка під акумулятори впирається в чашу");
+assert(pinwheel_r + norm([1, 1]) * bat_tol + 0.5 < pocket_r, "акумулятори впираються в обрізану по колу стінку");
+assert(norm([esp.x / 2, esp_y + esp.z / 2 + 3]) < in_r(deck_z), "ESP32 з деталями впирається в чашу");
 assert(node_top < plate_z[0] - 0.5, "колона з вузлом дімера впирається в пластину плафона");
 assert(pot1_face + pot1_shaft - boss[1] >= 6, "вал V1 заходить у хвостовик дімера менше ніж на 6 мм");
 assert(pot2_face + pot2_shaft - boss[1] >= 6, "вал V2 заходить у хвостовик дімера менше ніж на 6 мм");
@@ -152,7 +157,8 @@ assert(boss[1] - node_top > v1_travel + 0.3, "втулка торкається 
 assert(chassis_d / 2 + chassis_fit <= in_r(chassis_z), "шасі не проходить у чашу на z=27");
 assert(col_flat + col_fit + cup_wall <= (cell.x - cell.y) / 2, "стакан колони не влазить у центр вітряка");
 assert(v1_travel > sb_stroke && v1_travel < dim_z[0] - plate_z[1], "хід каретки V1: має натиснути кнопку і не впертися дімером у плафон");
-assert(refl[0] / 2 < in_r(refl_z + refl[1]), "відбивач не влазить у плафон");
+assert(refl[0] / 2 < sleeve_r - lap_t - 0.3, "відбивач не влазить у манжету плафона");
+assert(cut_z - lap - 1 > ring_z && top_z - cut_z + 0.5 <= 180 && cut_z - ring_z <= 180, "деталь шейдера вища за стіл принтера");
 assert(wire_z[0] + wire_d / 2 < strip_z0 && wire_z[1] - wire_d / 2 > strip_z1, "отвір під дроти заходить під смугу");
 assert(wire_z[0] - wire_d / 2 > deck_z + cup_depth, "нижній отвір під дроти схований у стакані шасі");
 assert(wire_z[1] + wire_d / 2 < node_z0 && node_z0 <= col_top, "верхній отвір під дроти впирається у вузол дімера або виходить за колону");
@@ -166,14 +172,16 @@ assert(pm_x1 <= sock_front, "плата IP5306 заходить у шлях шт
 assert(usb_hole.x >= plug.x + 0.3 && usb_hole.y >= plug.y + 0.3, "корпус штекера не проходить у зенківку");
 assert(usb_z - usb_hole.y / 2 > puck_z[0] + 1, "зенківка USB-C прориває низ шайби");
 assert(usb_sock.y < usb_hole.x && usb_sock.z < usb_hole.y, "гніздо більше за зенківку");
-assert(belt_r - wall + lap_join > cone_in - k && belt_r - wall + lap_join < belt_r - 0.5, "манжета не зростається зі стінкою плафона");
+assert(belt_r - wall + lap_join > in_r(cut_z + 1) && belt_r - wall + lap_join < out_r(cut_z + 1) - 0.5, "манжета не зростається зі стінкою плафона");
+assert(sleeve_r + bay.z + bay_fit < out_r(bay_z - bay_fit) - 1, "паз байонета прориває чашу");
 
 // --- шейдер ---
 function arc(c, r, a0, a1, n = 30) = [for (i = [0:n]) c + r * [cos(a0 + (a1 - a0) * i / n), sin(a0 + (a1 - a0) * i / n)]];
 
 module shade_envelope() {  // усе, що обмежує зовнішня поверхня, до осі
-  polygon(concat([[0, ring_z]], arc(fil_c, fil_r, -90, 0), [[belt_r, cut_z]],
-                 arc([cone_top.x - 0.5 * cos(atan(k)), top_z - 0.5], 0.5, atan(k), 90), [[0, top_z]]));
+  a = atan(up_k);
+  polygon(concat([[0, ring_z]], arc([base.x, ring_z + base.y], base.y, -90, -atan(low_k)), [[belt_r, cut_z]],
+                 arc([out_r(top_z - top_fil) - top_fil / cos(a), top_z - top_fil], top_fil, a, 90), [[0, top_z]]));
 }
 
 module shade_profile() {
@@ -203,14 +211,17 @@ module arc_ring(r0, r1, z0, h, a0, a1) {
 
 module bowl() {
   difference() {
+    union() {
     intersection() { shade(); zslab(0, cut_z); }
+    translate([0, 0, cut_z - lap]) rotate_extrude() translate([band_r, 0]) square([belt_r - 0.5 - band_r, lap]);
+  }
     for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) {  // Г-паз: вниз від краю, потім 30° по колу
       arc_ring(sleeve_r - 0.1, sleeve_r + bay.z + bay_fit, bay_z - bay_fit, cut_z - bay_z + bay_fit + 1, -0.5, bay_a + 0.5);
       arc_ring(sleeve_r - 0.1, sleeve_r + bay.z + bay_fit, bay_z - bay_fit, bay.y + 2 * bay_fit, -0.5, bay_turn + bay_a + 0.5);
     }
   }
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n)  // горбик: ламель перескакує його в кінці повороту
-    arc_ring(belt_r - wall, sleeve_r + bay.z + bay_fit + 0.1, bay_z - bay_fit - 0.01, bump_h + 0.01, bay_turn - 1.2, bay_turn - 0.4);
+    arc_ring(band_r, sleeve_r + bay.z + bay_fit + 0.1, bay_z - bay_fit - 0.01, bump_h + 0.01, bay_turn - 1.2, bay_turn - 0.4);
 }
 
 module shade_top() {
@@ -251,19 +262,21 @@ module rails(size, pos) {  // дві напрямні вздовж довгих 
     cube([size.x - 6, rail[0], rail[1]], center = true);
 }
 
-esp_pos  = [0, (cell.x + cell.y) / 2 + bat_tol + pocket_wall[0] + 1 + esp.y / 2];
 
 module chassis() {
   sq = cell.x + cell.y + 2 * bat_tol;
   difference() {
     union() {
       translate([0, 0, chassis_z]) cylinder(d = chassis_d, h = chassis_t);
-      translate([0, 0, deck_z]) linear_extrude(pocket_wall[1]) difference() { square(sq + 2 * pocket_wall[0], center = true); square(sq, center = true); }
+      translate([0, 0, deck_z]) linear_extrude(pocket_wall[1]) intersection() {
+        difference() { square(sq + 2 * pocket_wall[0], center = true); square(sq, center = true); }
+        circle(r = pocket_r);
+      }
       translate([0, 0, deck_z]) linear_extrude(cup_depth) difference() { octagon(col_flat + col_fit + cup_wall); octagon(col_flat + col_fit); }
-      rotate(90) rails([esp.y, esp.x], [esp_pos.y, 0]);
+      rails([esp.x, esp.z], [0, esp_y]);  // паз: плата стоїть ребром
     }
     translate([chan_x, 0, chassis_z - 1]) cylinder(d = chan_d, h = chassis_t + 2, $fn = 48);
-    rotate(90) translate([0, -groove.x / 2, deck_z - groove.y]) cube([esp_pos.y - esp.y / 2 + 3, groove.x, groove.y + 0.01]);  // до ESP32
+    rotate(90) translate([0, -groove.x / 2, deck_z - groove.y]) cube([esp_y, groove.x, groove.y + 0.01]);  // до ESP32
   }
 }
 
@@ -336,7 +349,7 @@ module batteries() { for (i = [0:3], l = [0:1]) cell_at(i, l); }
 module pcb() {
   translate([pm_x1 - ip5306.y, -ip5306.x / 2, pm_top - ip5306.z]) cube(ip5306);                       // IP5306 компонентами донизу
   translate([sock_front - usb_sock.x, -usb_sock.y / 2, usb_z - usb_sock.z / 2]) cube(usb_sock);       // гніздо USB-C
-  translate([esp_pos.x - esp.x / 2, esp_pos.y - esp.y / 2, deck_z + 1]) cube(esp);
+  translate([-esp.x / 2, esp_y - esp.z / 2, deck_z]) cube([esp.x, esp.z, esp.y]);  // стоїть ребром
 }
 
 module pot_v1() {

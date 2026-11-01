@@ -196,7 +196,7 @@
 
   // ── LED1: колона-змійка, розгорнута; смуга 1 знизу вгору, 2 згори вниз… ──
   t(830, 30, 'LED1 · колона-змійка, розгорнута', 'ref');
-  t(830, 46, '8 смуг × 10 SK6812 RGBW навколо восьмигранника', 'pn');
+  t(830, 46, '8 смуг × 6 SK6812 RGBW навколо восьмигранника', 'pn');
   var X = []; for (i = 0; i < 8; i++) X.push(860 + 40 * i);
   a('<path class="bus c-w5" d="M790 430H810V72H' + (X[7] - 7) + 'M810 370H' + (X[6] - 7) + '"/>');
   a('<path class="bus c-wg" d="M790 470H826V60H' + (X[7] + 7) + 'M826 382H' + (X[6] + 7) + '"/>');
@@ -205,7 +205,7 @@
   X.forEach(function (x, i) {
     var up = i % 2 === 0, top = 94, bot = 346;
     r(x - 12, 84, 24, 272, 'strip', 2);
-    for (var k = 0; k < 10; k++) r(x - 6, 120 + 20 * k, 12, 12, 'led', 1.5);
+    for (var k = 0; k < 6; k++) r(x - 6, 124 + 34 * k, 12, 12, 'led', 1.5);
     t(x, 112, up ? 'DOUT' : 'DIN', 'tiny mid'); t(x, 330, up ? 'DIN' : 'DOUT', 'tiny mid');
     a('<path class="arr" marker-end="url(#ah)" d="M' + (x + 20) + (up ? ' 312V124' : ' 124V312') + '"/>');
     if (up) a('<path class="bus c-w5" style="stroke-width:2" d="M' + (x - 7) + ' 346V370"/><path class="bus c-wg" style="stroke-width:2" d="M' + (x + 7) + ' 346V382"/>');
