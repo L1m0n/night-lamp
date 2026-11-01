@@ -13,9 +13,7 @@ part    = "assembly";  // shade_top, bowl, puck, puck_core, chassis, reflector, 
 variant = 2;           // вузол дімера для assembly/section: 1 — B100K з кнопкою, 2 — RK097NS з вимикачем
 
 /* [Шейдер зі STEP] */
-table_z  = 5;        // площина столу
-ring_z   = 15;       // дно-кільце шейдера (r 40…55)
-ring_r0  = 40;
+ring_z   = 15;       // дно-кільце шейдера (r 40…55); стіл на z=5
 fil_c    = [55, 40]; // центр заокруглення R25
 fil_r    = 25;
 belt_r   = 80;       // пояс z 40…50
@@ -83,7 +81,6 @@ sb         = [6.1, 3.6, 2.5];  // KFC-003A: ширина, глибина, вис
 sb_stroke  = 0.25;         // хід штока — заміряти
 v1_travel  = 0.4;          // хід каретки до упорів: шток 0.25 + запас, щоб не роздавити кнопку
 guide_wall = 1.3;
-carr_wall  = 1.2;
 fit        = 0.15;         // зазор ковзання/посадки
 
 /* [Вузол дімера V2: RK097NS] */
@@ -108,7 +105,6 @@ k        = (belt_r - cone_top.x) / (cone_top.y - cut_z);    // нахил кон
 cone_in  = belt_r - wall * sqrt(1 + k * k);                 // внутрішній конус на z=50
 function in_r(z) = z < fil_c.y ? fil_c.x + sqrt(pow(fil_r - wall, 2) - pow(fil_c.y - z, 2))
                  : z <= cut_z ? belt_r - wall : cone_in - k * (z - cut_z);
-col_rc    = col_face / (2 * sin(22.5));  // радіус по вершинах
 col_flat  = col_face / (2 * tan(22.5));  // половина розміру під ключ
 chassis_z = collar.z + 2;                // шасі лежить на верху коміра
 deck_z    = chassis_z + chassis_t;       // верх диска шасі
