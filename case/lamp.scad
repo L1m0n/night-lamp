@@ -45,7 +45,10 @@ ip5306   = [21, 25, 1.2];  // ширина (край з USB-C), довжина, 
 pm_fit   = 0.3;
 usb_z    = 10;             // центр гнізда USB-C: 5 мм над столом
 usb_below = 1.6;           // плата лежить компонентами донизу: центр гнізда під її нижньою стороною — заміряти
-usb_hole = [12.6, 7.0];    // вікно під штекер разом з оболонкою
+usb_sock = [7.5, 9, 3.2];  // гніздо USB-C: глибина, ширина, висота — заміряти
+usb_over = 0.2;            // на скільки гніздо виступає за край плати — заміряти
+plug     = [12.4, 6.6];    // литий корпус штекера: ширина, висота
+plug_fit = 0.2;            // зазор навколо корпусу штекера в зенківці
 chan_d   = 8;              // канал під дроти вгору, виходить усередину колони
 chan_x   = 6;
 
@@ -113,7 +116,10 @@ bat_top   = deck_z + 2 * cell.z;
 refl_z    = bat_top;                     // відбивач лежить на акумуляторах
 pinwheel_r = norm([1, 1] * (cell.x + cell.y) / 2);  // кут квадрата 75×75
 pm_top    = usb_z + usb_below + ip5306.z;                   // стеля кишені = спина плати
+usb_hole  = plug + [2, 2] * plug_fit;                       // зенківка під корпус штекера
 pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_fit;  // край плати з USB-C: кути кишені ≥1.2 від боку шайби
+sock_front = pm_x1 + usb_over;                             // торець гнізда USB-C
+win_x0    = sock_front - 0.5;                              // дно зенківки: трохи за торцем гнізда
 sleeve_r  = belt_r - wall - lap_fit;                        // зовнішній радіус манжети плафона
 bay_z     = cut_z - lap / 2 - bay.y / 2;                    // низ ламелі
 bay_a     = bay.x / sleeve_r * 180 / PI;                    // ламель по дузі, градуси
@@ -143,7 +149,11 @@ assert(refl[0] / 2 < in_r(refl_z + refl[1]), "відбивач не влазит
 assert(chan_x + chan_d / 2 < col_bore / 2, "канал з шайби має виходити всередину колони");
 assert(pm_x1 - ip5306.y > chan_x - chan_d / 2, "плата IP5306 не влазить у кишеню");
 assert(norm([pm_x1 + pm_fit, ip5306.x / 2 + pm_fit]) < puck_d / 2 - 1, "кишеня IP5306 прориває бік шайби");
-assert(pm_x1 + 6 > puck_d / 2, "вікно USB-C не виходить назовні");
+assert(win_x0 <= sock_front && win_x0 >= sock_front - 0.5, "дно зенківки USB-C має бути в межах 0.5 мм від торця гнізда");
+assert(pm_x1 <= sock_front, "плата IP5306 заходить у шлях штекера");
+assert(usb_hole.x >= plug.x + 0.3 && usb_hole.y >= plug.y + 0.3, "корпус штекера не проходить у зенківку");
+assert(usb_z - usb_hole.y / 2 > puck_z[0] + 1, "зенківка USB-C прориває низ шайби");
+assert(usb_sock.y < usb_hole.x && usb_sock.z < usb_hole.y, "гніздо більше за зенківку");
 assert(belt_r - wall + lap_join > cone_in - k && belt_r - wall + lap_join < belt_r - 0.5, "манжета не зростається зі стінкою плафона");
 
 // --- шейдер ---
@@ -206,7 +216,8 @@ module shade_top() {
 // --- шайба ---
 module puck_void() {
   translate([chan_x - chan_d / 2, -ip5306.x / 2 - pm_fit, puck_z[0] - 1]) cube([pm_x1 + pm_fit - chan_x + chan_d / 2, ip5306.x + 2 * pm_fit, pm_top - puck_z[0] + 1]);
-  translate([pm_x1 - 4, -usb_hole.x / 2, usb_z - usb_hole.y / 2]) cube([10, usb_hole.x, usb_hole.y]);
+  // зенківка від торця гнізда назовні: корпус штекера заходить до торця, гніздо стоїть глибше за бік шайби
+  translate([win_x0, -usb_hole.x / 2, usb_z - usb_hole.y / 2]) cube([puck_d / 2 + 1 - win_x0, usb_hole.x, usb_hole.y]);
   translate([chan_x, 0, puck_z[0]]) cylinder(d = chan_d, h = puck_z[1] - puck_z[0] + 1, $fn = 48);
 }
 
@@ -314,7 +325,7 @@ module batteries() { for (i = [0:3], l = [0:1]) cell_at(i, l); }
 
 module pcb() {
   translate([pm_x1 - ip5306.y, -ip5306.x / 2, pm_top - ip5306.z]) cube(ip5306);                       // IP5306 компонентами донизу
-  translate([pm_x1 - 7.3, -4.5, usb_z - 1.6]) cube([7.5, 9, 3.2]);                                     // гніздо USB-C
+  translate([sock_front - usb_sock.x, -usb_sock.y / 2, usb_z - usb_sock.z / 2]) cube(usb_sock);       // гніздо USB-C
   translate([esp_pos.x - esp.x / 2, esp_pos.y - esp.y / 2, deck_z + 1]) cube(esp);
   translate([perf_pos.x - perf.x / 2, perf_pos.y - perf.y / 2, deck_z + 1]) cube([perf.x, perf.y, 1.6]);
 }
