@@ -157,11 +157,11 @@
   }
   function vg(v, fn) { a('<g data-variant="' + v + '">'); fn(); a('</g>'); }
 
-  // ── BT1: 4 комірки, два стоси по 2, спільні шини + і − ──
+  // ── BT1: 6 комірок, два стоси по 3, спільні шини + і − ──
   t(20, 40, 'BT1 · акумулятор', 'ref');
-  t(20, 54, '4 × Li-Pol 55×20×10, паралельно (1S)', 'pn');
-  for (var L = 0; L < 2; L++) for (var i = 0; i < 2; i++) {
-    var cx = 56 + L * 112 + i * 26;
+  t(20, 54, '6 × Li-Pol 60×20×8, паралельно (1S)', 'pn');
+  for (var L = 0; L < 2; L++) for (var i = 0; i < 3; i++) {
+    var cx = 43 + L * 112 + i * 26;
     a('<path class="bus c-w5" style="stroke-width:2" d="M' + (cx + 10) + ' 100V84"/><path class="bus c-wg" style="stroke-width:2" d="M' + (cx + 10) + ' 220V236"/>');
     r(cx, 100, 20, 120, 'body', 3); r(cx + 2, 103, 16, 12, 'pcm');
     t(cx + 10, 112, 'PCM', 'tiny mid'); t(cx + 10, 165, '+', 'tiny mid');

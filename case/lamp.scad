@@ -59,7 +59,8 @@ chan_x   = -6.5;            // з того боку осі, де немає пл
 chassis_d   = 91;
 chassis_fit = 0.2;
 chassis_t   = 3;
-cell        = [55, 20, 10];  // Li-Pol 850 мА·год
+cell        = [60, 20, 8];   // Li-Pol 850 мА·год з PCM і двостороннім скотчем — заміряно
+layers      = 3;             // два стоси по 3 = 6 комірок
 bat_tol     = 0.5;
 pocket_wall = [1.2, 5];      // стінка навколо вітряка: товщина, висота
 esp  = [22.5, 18, 1.2];      // ESP32-C3 SuperMini — заміряти
@@ -68,7 +69,7 @@ groove = [6, 1.5];           // жолоб під дроти з колони д�
 cup_depth = 8;
 cup_wall  = 2;
 col_fit   = 0.2;
-refl = [103, 1.2];           // білий відбивач
+refl = [102, 1.2];           // білий відбивач
 
 /* [Колона] */
 col_face = 12.5;   // грань восьмигранника
@@ -121,10 +122,10 @@ function in_r(z) = z < fil_c.y ? fil_c.x + sqrt(pow(fil_r - wall, 2) - pow(fil_c
 col_flat  = col_face / (2 * tan(22.5));  // половина розміру під ключ
 chassis_z = collar.z + 2;                // шасі лежить на верху коміра
 deck_z    = chassis_z + chassis_t;       // верх диска шасі
-bat_top   = deck_z + 2 * cell.z;
+bat_top   = deck_z + layers * cell.z;
 refl_z    = bat_top;                     // відбивач лежить на акумуляторах
 cut_z     = refl_z + refl[1] + 1;         // розріз: відбивач на 1 мм нижче краю чаші
-bat_y0    = col_flat + col_fit + cup_wall + 0.5 + bat_tol;  // акумулятори двома стосами по боках колони (±Y)
+bat_y0    = col_flat + col_fit + cup_wall + bat_tol;  // акумулятори двома стосами по боках колони (±Y), впритул до стакана
 bat_corner = norm([cell.x / 2 + bat_tol, bat_y0 + cell.y + bat_tol]);
 pocket_r  = in_r(deck_z) - 0.3;
 esp_x     = -(cell.x / 2 + bat_tol + pocket_wall[0] + 3 + esp.z / 2);  // ESP32 ребром за торцем акумуляторів
@@ -349,7 +350,7 @@ module dimmer() {
 }
 
 // --- макети покупних деталей ---
-module batteries() { for (sd = [-1, 1], l = [0:1]) cell_at(sd, l); }
+module batteries() { for (sd = [-1, 1], l = [0:layers - 1]) cell_at(sd, l); }
 
 module pcb() {
   translate([pm_x1 - ip5306.y, -ip5306.x / 2, pm_top - ip5306.z]) cube(ip5306);                       // IP5306 компонентами донизу
