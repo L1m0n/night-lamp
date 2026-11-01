@@ -113,7 +113,10 @@
     view.root = new THREE.Group();
     view.root.rotation.x = -Math.PI / 2; // z вгору → y вгору
     view.scene.add(view.root);
-    view.renderer.setAnimationLoop(function () { view.controls.update(); view.renderer.render(view.scene, view.camera); });
+    view.renderer.setAnimationLoop(function () {
+      view.controls.update(); // під час загасання руху сам ставить dirty через 'change'
+      if (view.dirty) { view.dirty = false; view.renderer.render(view.scene, view.camera); }
+    });
   } else {
     Lamp3D.fallback(host, 'Тут мала бути тривимірна деталь, але цей браузер не підтримує WebGL (або бібліотеки не завантажились). Назва, матеріал і розміри — під цим полем.');
   }
@@ -137,6 +140,7 @@
     mesh.position.copy(bb.getCenter(new THREE.Vector3())).negate(); // деталь по центру
     view.root.add(mesh);
     frame();
+    view.dirty = true;
   }
 
   // Камера 3/4 зверху, відстань — щоб сфера деталі влізла по вужчій стороні

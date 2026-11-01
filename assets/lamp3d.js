@@ -75,13 +75,16 @@
     var controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    var s = { renderer: renderer, scene: scene, camera: camera, controls: controls, aspect: 1, onResize: null };
+    // dirty: малювати лише коли щось змінилось (рух камери, ресайз, анімація сторінки)
+    var s = { renderer: renderer, scene: scene, camera: camera, controls: controls, aspect: 1, onResize: null, dirty: true };
+    controls.addEventListener('change', function () { s.dirty = true; });
     function resize() {
       var w = host.clientWidth || 1, h = host.clientHeight || 1;
       renderer.setSize(w, h, false);
       camera.aspect = s.aspect = w / h;
       camera.updateProjectionMatrix();
       if (s.onResize) s.onResize();
+      s.dirty = true;
     }
     if (window.ResizeObserver) new ResizeObserver(resize).observe(host); else window.addEventListener('resize', resize);
     resize();

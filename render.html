@@ -99,9 +99,11 @@
     sh.vertexShader = 'varying float vZ;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vZ = position.z;');
     sh.fragmentShader = 'varying float vZ;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>',
       '#include <emissivemap_fragment>\n totalEmissiveRadiance *= (0.35 + 0.65 * smoothstep(44.0, 95.0, vZ) * (1.0 - 0.45 * smoothstep(150.0, 250.0, vZ)))'
-      + ' * (0.55 + 0.6 * pow(abs(dot(normal, normalize(vViewPosition))), 1.5));');
+      + ' * (0.35 + 0.9 * pow(abs(dot(normal, normalize(vViewPosition))), 2.5));');
   };
   var shadeBack = shadeMat.clone(); shadeBack.side = THREE.BackSide; shadeBack.onBeforeCompile = shadeMat.onBeforeCompile;
+  // Матовий розсіювач: колона має проступати мʼякою смугою, тож оболонки помітно прозорі (задня — ще прозоріша)
+  var OPACITY = { front: [0.68, 0.62], back: [0.45, 0.4] }; // [вимкнено, світиться]
   meshes.shade_top = [new THREE.Mesh(Lamp3D.geom('shade_top'), shadeBack), new THREE.Mesh(Lamp3D.geom('shade_top'), shadeMat)];
   meshes.shade_top[0].renderOrder = 2; meshes.shade_top[1].renderOrder = 3;
   root.add(meshes.shade_top[0], meshes.shade_top[1]);
@@ -139,6 +141,12 @@
     depthWrite: false, toneMapped: false, opacity: 0
   }));
   halo.scale.set(400, 400, 1); halo.renderOrder = 1; root.add(halo);
+  // Мʼяке ядро світла навколо колони — між задньою і передньою оболонками, тож видно його розмитим крізь плафон
+  var core = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: radial([[0, 'rgba(255,170,90,1)'], [0.3, 'rgba(255,150,70,.55)'], [1, 'rgba(255,140,60,0)']]),
+    depthWrite: false, toneMapped: false, opacity: 0, blending: THREE.AdditiveBlending
+  }));
+  core.scale.set(110, 260, 1); core.renderOrder = 2.5; root.add(core);
 
   // Стан
   var target = { glow: 1, t: 0 }, cur = { glow: 1, t: 0 };
@@ -152,7 +160,7 @@
     r.addEventListener('change', function () { target.glow = r.value === 'on' ? 1 : 0; });
   });
   document.querySelectorAll('input[name="variant"]').forEach(function (r) {
-    r.addEventListener('change', function () { setVariant(r.value); });
+    r.addEventListener('change', function () { setVariant(r.value); v.dirty = true; });
   });
   var slider = document.getElementById('explode');
   slider.addEventListener('input', function () { target.t = +slider.value; });
@@ -176,20 +184,25 @@
   v.onResize = function () { if (!moved) home(); };
 
   function apply(dt) {
-    var k = 1 - Math.exp(-dt * 7);
-    cur.glow += (target.glow - cur.glow) * k;
-    cur.t += (target.t - cur.t) * k;
+    var k = 1 - Math.exp(-dt * 7), busy = Math.abs(target.glow - cur.glow) > 1e-3 || Math.abs(target.t - cur.t) > 1e-3;
+    if (!busy && !v.dirty) return;
+    cur.glow = busy ? cur.glow + (target.glow - cur.glow) * k : target.glow;
+    cur.t = busy ? cur.t + (target.t - cur.t) * k : target.t;
+    v.dirty = true;
     var g = cur.glow, t = cur.t;
 
     for (var n in meshes) meshes[n].forEach(function (m) { m.position.z = LIFT[n] * t; });
     bulbs.forEach(function (b) { b.intensity = 1.25 * g; b.position.z = b.userData.z + LIFT.column * t; });
     halo.position.z = 150 + LIFT.shade_top * t * 0.8;
     halo.material.opacity = 0.7 * g;
+    core.position.z = 135 + LIFT.column * t;
+    core.material.opacity = 0.9 * g;
     pool.material.opacity = g;
 
     shadeMat.emissiveIntensity = shadeBack.emissiveIntensity = 1.05 * g;
     shadeMat.color.lerpColors(SHADE_OFF, SHADE_ON, g); shadeBack.color.copy(shadeMat.color);
-    shadeMat.opacity = 0.94 + 0.04 * g;
+    shadeMat.opacity = OPACITY.front[0] + (OPACITY.front[1] - OPACITY.front[0]) * g;
+    shadeBack.opacity = OPACITY.back[0] + (OPACITY.back[1] - OPACITY.back[0]) * g;
     columnMat.emissiveIntensity = 1.6 * g;
     hemi.intensity = 0.5 - 0.3 * g;
     sun.intensity = 0.85 - 0.68 * g;
@@ -208,7 +221,7 @@
   v.renderer.setAnimationLoop(function () {
     apply(Math.min(clock.getDelta(), 0.1));
     controls.update();
-    v.renderer.render(scene, camera);
+    if (v.dirty) { v.dirty = false; v.renderer.render(scene, camera); }
   });
 })();
 </script>
