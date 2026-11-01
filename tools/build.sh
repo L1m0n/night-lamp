@@ -10,3 +10,4 @@ for p in shade_top bowl puck puck_core chassis reflector column knob_v1_carriage
 done
 # друковані деталі — кожна одним тілом (макети покупних деталей не перевіряємо)
 python3 -I tools/stl_bodies.py case/stl/{shade_top,bowl,puck,puck_core,chassis,reflector,column,knob_v1_carriage,knob_v1_guide,knob_v2_cap,dimmer}.stl
+python3 -I tools/stl2js.py case/stl assets/models.js
