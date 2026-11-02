@@ -12,6 +12,7 @@
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 0 0 20px; }
   .range { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
   .range input { width: 160px; margin: 0; accent-color: var(--accent); }
+  .range input[type="color"] { width: 34px; height: 24px; padding: 0; border: 1px solid var(--rule); border-radius: 6px; background: none; cursor: pointer; }
   .stage { position: relative; height: clamp(440px, 74vh, 780px); border-bottom: 1px solid var(--rule); }
   .stage canvas { display: block; width: 100%; height: 100%; }
   .fallback { margin: 0; padding: 48px 0; color: var(--muted); max-width: 32em; }
@@ -42,6 +43,7 @@
       <label><input type="radio" name="variant" value="V1" checked><span>V1</span></label>
       <label><input type="radio" name="variant" value="V2"><span>V2</span></label>
     </div>
+    <label class="range">Колір чаші <input type="color" id="bowlColor" value="#a8b88e"></label>
     <label class="range">Розібрати <input type="range" id="explode" min="0" max="1" step="0.01" value="0"></label>
   </div>
 
@@ -166,6 +168,12 @@
     r.checked = r.value === v0;
     r.addEventListener('change', function () { try { localStorage.setItem(VKEY, r.value.toLowerCase()); } catch (e) {} setVariant(r.value); v.dirty = true; });
   });
+  // Колір чаші — лише для цього перегляду, памʼятається в браузері
+  var bowlIn = document.getElementById('bowlColor'), CKEY = 'lamp-bowl-color';
+  try { var sc = localStorage.getItem(CKEY); if (/^#[0-9a-f]{6}$/i.test(sc)) bowlIn.value = sc; } catch (e) {}
+  function setBowl() { meshes.bowl[0].material.color.set(bowlIn.value); v.dirty = true; }
+  bowlIn.addEventListener('input', function () { setBowl(); try { localStorage.setItem(CKEY, bowlIn.value); } catch (e) {} });
+  setBowl();
   var slider = document.getElementById('explode');
   slider.addEventListener('input', function () { target.t = +slider.value; });
   setVariant(document.querySelector('input[name="variant"]:checked').value);
