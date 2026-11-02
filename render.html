@@ -43,7 +43,7 @@
       <label><input type="radio" name="variant" value="V1" checked><span>V1</span></label>
       <label><input type="radio" name="variant" value="V2"><span>V2</span></label>
     </div>
-    <label class="range">Колір чаші <input type="color" id="bowlColor" value="#a8b88e"></label>
+    <label class="range">Колір чаші й дімера <input type="color" id="bowlColor" value="#a8b88e"></label>
     <label class="range">Розібрати <input type="range" id="explode" min="0" max="1" step="0.01" value="0"></label>
   </div>
 
@@ -168,10 +168,10 @@
     r.checked = r.value === v0;
     r.addEventListener('change', function () { try { localStorage.setItem(VKEY, r.value.toLowerCase()); } catch (e) {} setVariant(r.value); v.dirty = true; });
   });
-  // Колір чаші — лише для цього перегляду, памʼятається в браузері
+  // Колір чаші й кришки дімера — лише для цього перегляду, памʼятається в браузері
   var bowlIn = document.getElementById('bowlColor'), CKEY = 'lamp-bowl-color';
   try { var sc = localStorage.getItem(CKEY); if (/^#[0-9a-f]{6}$/i.test(sc)) bowlIn.value = sc; } catch (e) {}
-  function setBowl() { meshes.bowl[0].material.color.set(bowlIn.value); v.dirty = true; }
+  function setBowl() { ['bowl', 'dimmer'].forEach(function (n) { meshes[n][0].material.color.set(bowlIn.value); }); v.dirty = true; }
   bowlIn.addEventListener('input', function () { setBowl(); try { localStorage.setItem(CKEY, bowlIn.value); } catch (e) {} });
   setBowl();
   var slider = document.getElementById('explode');
