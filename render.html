@@ -93,7 +93,7 @@
 
   // Плафон: дві оболонки (внутрішня, потім зовнішня), щоб прозорість сортувалась без артефактів
   var shadeMat = new THREE.MeshStandardMaterial({
-    color: 0xfbf6ee, roughness: 0.9, transparent: true, opacity: 0.94, depthWrite: false,
+    color: 0xfbf6ee, roughness: 0.95, transparent: true, opacity: 0.94, depthWrite: false,
     emissive: 0xffc98f, emissiveIntensity: 0
   });
   // Світіння: найяскравіше на висоті стрічок, згасає до верху й до шва; посередині (де за стінкою колона) світліше, ніж на краях
@@ -104,8 +104,8 @@
       + ' * (0.35 + 0.9 * pow(abs(dot(normal, normalize(vViewPosition))), 2.5));');
   };
   var shadeBack = shadeMat.clone(); shadeBack.side = THREE.BackSide; shadeBack.onBeforeCompile = shadeMat.onBeforeCompile;
-  // Матовий розсіювач: колона має проступати мʼякою смугою, тож оболонки помітно прозорі (задня — ще прозоріша)
-  var OPACITY = { front: [0.68, 0.62], back: [0.45, 0.4] }; // [вимкнено, світиться]
+  // Матовий білий PLA: колона ледь проступає мʼякою тінню, світло — рівна пляма (задня оболонка прозоріша)
+  var OPACITY = { front: [0.9, 0.85], back: [0.7, 0.62] }; // [вимкнено, світиться]
   meshes.shade_top = [new THREE.Mesh(Lamp3D.geom('shade_top'), shadeBack), new THREE.Mesh(Lamp3D.geom('shade_top'), shadeMat)];
   meshes.shade_top[0].renderOrder = 2; meshes.shade_top[1].renderOrder = 3;
   root.add(meshes.shade_top[0], meshes.shade_top[1]);
