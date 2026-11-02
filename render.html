@@ -174,7 +174,7 @@
   function setBowl() {
     // Матовий PLA: чорний пластик не буває 0 (відбиває кілька %), а що темніший — то матовіший, без глянцевого відблиску
     var c = new THREE.Color(bowlIn.value), hsl = c.getHSL({});
-    if (hsl.l < 0.1) c.setHSL(hsl.h, hsl.s, 0.1);
+    if (hsl.l < 0.025) c.setHSL(hsl.h, hsl.s, 0.025);
     ['bowl', 'dimmer'].forEach(function (n) {
       var m = meshes[n][0].material; m.color.copy(c); m.roughness = 0.62 + 0.3 * (1 - Math.min(1, hsl.l / 0.5));
     });
