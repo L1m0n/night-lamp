@@ -171,7 +171,15 @@
   // Колір чаші й кришки дімера — лише для цього перегляду, памʼятається в браузері
   var bowlIn = document.getElementById('bowlColor'), CKEY = 'lamp-bowl-color';
   try { var sc = localStorage.getItem(CKEY); if (/^#[0-9a-f]{6}$/i.test(sc)) bowlIn.value = sc; } catch (e) {}
-  function setBowl() { ['bowl', 'dimmer'].forEach(function (n) { meshes[n][0].material.color.set(bowlIn.value); }); v.dirty = true; }
+  function setBowl() {
+    // Матовий PLA: чорний пластик не буває 0 (відбиває кілька %), а що темніший — то матовіший, без глянцевого відблиску
+    var c = new THREE.Color(bowlIn.value), hsl = c.getHSL({});
+    if (hsl.l < 0.1) c.setHSL(hsl.h, hsl.s, 0.1);
+    ['bowl', 'dimmer'].forEach(function (n) {
+      var m = meshes[n][0].material; m.color.copy(c); m.roughness = 0.62 + 0.3 * (1 - Math.min(1, hsl.l / 0.5));
+    });
+    v.dirty = true;
+  }
   bowlIn.addEventListener('input', function () { setBowl(); try { localStorage.setItem(CKEY, bowlIn.value); } catch (e) {} });
   setBowl();
   var slider = document.getElementById('explode');
