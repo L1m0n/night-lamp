@@ -237,6 +237,12 @@ module shade_top() {
     }
     translate([0, 0, cut_z - lap - 1]) cylinder(r = sleeve_r - lap_t, h = lap + 3);
   }
+  // скіс 45° над уступом манжети: плафон друкується догори дриґом, і без скосу уступ висить без опори
+  chamf = belt_r - wall - (sleeve_r - lap_t);
+  translate([0, 0, cut_z + 1]) difference() {
+    cylinder(r = belt_r - wall + lap_join, h = chamf);
+    translate([0, 0, -0.01]) cylinder(r1 = sleeve_r - lap_t, r2 = belt_r - wall, h = chamf + 0.02);
+  }
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) arc_ring(sleeve_r - 0.5, sleeve_r + bay.z, bay_z, bay.y, 0, bay_a);
 }
 
