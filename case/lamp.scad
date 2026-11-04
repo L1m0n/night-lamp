@@ -24,7 +24,7 @@ belt_z   = sz(50);            // верх поясу
 cone_top = [70.0227 * S, sz(249.675)];  // кінець конуса, далі заокруглення 0.5
 top_z    = sz(250.15);
 wall     = 2;
-top_wall = 1.6;   // стінка плафона: тонша — швидше друк і більше світла крізь матовий PLA
+top_wall = 1.2;   // стінка плафона: 2 лінії по 0.6 — швидше друк і більше світла крізь матовий PLA
 plate_z  = [174.43, 176.43];  // верхня пластина 2 мм; опущена на 0.75, щоб дімер 2.5 мм став урівень
 plate_hole_d = 20;
 recess_r = 67.5 * S;          // заглиблення під дімер
@@ -34,7 +34,6 @@ collar   = [40 * S, 42 * S, 17];  // комір під шайбу: r внутр�
 lap      = 6;     // напуск плафона в чашу
 lap_fit  = 0.2;
 lap_t    = 1.6;   // товщина манжети плафона
-lap_join = 0.5;   // над z=50 манжета заходить у стінку плафона, щоб бути з ним одним тілом
 bay      = [8, 2, 1.0];  // ламель: по дузі, по висоті, радіально
 bay_n    = 3;
 bay_turn = 30;    // поворот байонета
@@ -181,7 +180,7 @@ assert(usb_hole.x >= plug.x + 0.3 && usb_hole.y >= plug.y + 0.3, "корпус �
 assert(usb_z - usb_hole.y / 2 > puck_z[0] + 1, "зенківка USB-C прориває низ шайби");
 assert(usb_sock.y < usb_hole.x && usb_sock.z < usb_hole.y, "гніздо більше за зенківку");
 top_in = in_r(cut_z + 1) + wall - top_wall;  // внутрішній радіус плафона над швом (наближено, конус майже вертикальний)
-assert(belt_r - top_wall + lap_join > top_in && belt_r - top_wall + lap_join < top_in + top_wall - 0.5, "манжета не зростається зі стінкою плафона");
+assert(top_wall / 2 < top_wall - 0.5, "стінка плафона < 1 мм: кільце зрощення з манжетою не заходить у неї");
 assert(refl[0] / 2 < sleeve_r - lap_t - 0.3, "відбивач не влазить у манжету плафона");
 assert(sleeve_r + bay.z + bay_fit < in_r(cut_z) + wall - 0.9, "паз байонета прориває чашу: стінка під пазом < 0.9");
 
@@ -235,15 +234,15 @@ module shade_top() {
   difference() {  // манжета: заходить у чашу на 6 мм, сходинка — торець плафона на краю чаші
     union() {
       translate([0, 0, cut_z - lap]) cylinder(r = sleeve_r, h = lap);
-      translate([0, 0, cut_z]) cylinder(r = belt_r - top_wall + lap_join, h = 1);  // зрощення зі стінкою
+      translate([0, 0, cut_z]) cylinder(r = top_in + top_wall / 2, h = 1);  // зрощення зі стінкою
     }
     translate([0, 0, cut_z - lap - 1]) cylinder(r = sleeve_r - lap_t, h = lap + 3);
   }
   // скіс 45° над уступом манжети: плафон друкується догори дриґом, і без скосу уступ висить без опори
-  chamf = belt_r - top_wall - (sleeve_r - lap_t);
+  chamf = top_in - (sleeve_r - lap_t);
   translate([0, 0, cut_z + 1]) difference() {
-    cylinder(r = belt_r - top_wall + lap_join, h = chamf);
-    translate([0, 0, -0.01]) cylinder(r1 = sleeve_r - lap_t, r2 = belt_r - top_wall, h = chamf + 0.02);
+    cylinder(r = top_in + top_wall / 2, h = chamf);
+    translate([0, 0, -0.01]) cylinder(r1 = sleeve_r - lap_t, r2 = top_in, h = chamf + 0.02);
   }
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) arc_ring(sleeve_r - 0.5, sleeve_r + bay.z, bay_z, bay.y, 0, bay_a);
 }
