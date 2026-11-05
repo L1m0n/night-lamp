@@ -145,7 +145,8 @@ pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_
 sock_front = pm_x1 + usb_over;                             // торець гнізда USB-C
 win_x0    = sock_front - 0.5;                              // дно зенківки: трохи за торцем гнізда
 sleeve_r  = in_r(cut_z) - lap_fit;                          // зовнішній радіус манжети: стінка над поясом звужується, найвужче — на краю
-refl      = [floor(2 * (sleeve_r - lap_t - 0.3) * 2) / 2, 1.2];  // білий відбивач: під внутрішній радіус манжети, округлено вниз до 0.5
+refl      = [floor(2 * (min(sleeve_r - lap_t, cav_r(refl_z)) - 0.3) * 2) / 2, 1.2];  // білий відбивач: під манжету і під стінку основи (він нижче кільця), вниз до 0.5
+refl_notch_r = rib_r(refl_z) - 0.3;      // виїмки відбивача під ребра
 bay_z     = cut_z - lap / 2 - bay.y / 2;                    // низ ламелі
 bay_a     = bay.x / sleeve_r * 180 / PI;                    // ламель по дузі, градуси
 bore      = col_bore - 2 * fit - 2 * guide_wall;            // отвір напрямної V1
@@ -173,13 +174,13 @@ for (z = [floor_z : 0.5 : cut_z - 0.5]) assert(rib_r(z + 0.5) >= rib_r(z) - 1e-6
 function wall_n(z) = z < fil_c.y ? fil_r - norm([cav_r(z) - fil_c.x, z - fil_c.y])
                    : z <= belt_z ? belt_r - cav_r(z) : (belt_r - k * (z - belt_z) - cav_r(z)) / sqrt(1 + k * k);
 // вікно акумуляторів: кут нижньої комірки під заокругленням, верх під кільцем, шасі й комірки повз ребра
-function chassis_pass_ok(a) =  // шасі опускають згори повз ребро на куті a: виїмка чиста від rib_r(z) на всій висоті ребра + 0.3
-  notch_r + 0.3 <= min([for (z = [chassis_z : 0.5 : ring_z0 + 0.3]) rib_r(z)])
-  && (notch_a - pad_half) * PI / 180 * notch_r >= 0.3;
 assert(bat_corner + 0.3 <= cav_r(deck_z), "кут нижньої комірки впирається в заокруглення дна основи");
 assert(bat_top + 0.3 <= ring_z0, "верхня комірка зачіпає байонетне кільце");
 assert(chassis_d / 2 + chassis_fit <= cav_r(chassis_z), "шасі не лягає на дно основи");
-for (a = pad_a) assert(chassis_pass_ok(a), "шасі не проходить повз ребро при складанні");
+// виїмки шасі й відбивача (notch_r, refl_notch_r) виведені з rib_r у найвужчому місці (rib_r не спадає вгору), тож лишається перевірити запас по дузі
+assert((notch_a - pad_half) * PI / 180 * notch_r >= 0.3, "виїмка шасі вужча за ребро: запас по дузі < 0.3");
+assert(refl[0] / 2 + 0.3 <= cav_r(refl_z), "відбивач упирається в стінку основи");
+assert(refl_notch_r + 0.3 <= rib_r(refl_z) && (notch_a - pad_half) * PI / 180 * refl_notch_r >= 0.3, "виїмка відбивача не чиста від ребра");
 assert(refl[0] / 2 + 0.3 <= sleeve_r - lap_t, "відбивач не влазить у манжету плафона");
 // стос (з рамкою) і ESP32 — під внутрішньою гранню ребра на 90°/270° та 180°; rib_r росте вгору, тож мінімум на deck_z
 assert(norm([(bat_y0 + cell.y + bat_tol + pocket_wall[0]) * tan(pad_half), bat_y0 + cell.y + bat_tol + pocket_wall[0]]) + 0.3 <= rib_r(deck_z), "стос акумуляторів зачіпає ребро на 90°/270°");
@@ -340,7 +341,10 @@ module chassis() {
 }
 
 module reflector() {
-  translate([0, 0, refl_z]) linear_extrude(refl[1]) difference() { circle(d = refl[0]); octagon(col_flat + strip_t + 0.3); }  // пропускає смугу
+  translate([0, 0, refl_z]) linear_extrude(refl[1]) difference() {
+    circle(d = refl[0]); octagon(col_flat + strip_t + 0.3);  // пропускає смугу
+    for (a = pad_a) rotate(a - notch_a) polygon(concat([for (t = [0 : 1 : 2 * notch_a]) refl_notch_r * [cos(t), sin(t)]], [for (t = [2 * notch_a : -1 : 0]) refl[0] * [cos(t), sin(t)]]));  // виїмка під ребро
+  }
 }
 
 // --- колона ---
