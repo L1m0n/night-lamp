@@ -169,6 +169,8 @@ for (z = [floor_z : 0.5 : cut_z - 0.5]) assert(rib_r(z + 0.5) >= rib_r(z) - 1e-6
 // нормальна товщина стінки (до зовнішнього контуру) вздовж порожнини; нижче z=20 стінку тримає суцільне дно
 function wall_n(z) = z < fil_c.y ? fil_r - norm([cav_r(z) - fil_c.x, z - fil_c.y])
                    : z <= belt_z ? belt_r - cav_r(z) : (belt_r - k * (z - belt_z) - cav_r(z)) / sqrt(1 + k * k);
+// z<20 — кут на суцільному фундаменті (нормальна стінка 4→5), перевіряємо від початку дуги зсуву
+assert(puck_z[1] < floor_z + 1, "канал під дроти не доходить до порожнини основи");
 for (z = [fil_c.y - fil_r + base_wall : 0.5 : cut_z]) assert(wall_n(z) >= base_wall - 0.2, "стінка основи тонша за base_wall");
 assert(pm_top + 3 <= floor_z, "бетон над кишенею IP5306 тонший за 3 мм");
 assert(bat_corner + 0.5 < pocket_r, "акумулятори впираються в чашу");
@@ -265,6 +267,7 @@ module puck_void() {
 module base_void() {
   rotate_extrude() polygon(concat([[0, floor_z]], [for (z = [floor_z : 1 : cut_z]) [cav_r(z), z]], [[cav_r(cut_z), cut_z + 1], [0, cut_z + 1]]));
   puck_void();
+  translate([chan_x, 0, puck_z[1]]) cylinder(d = chan_d, h = floor_z + 1 - puck_z[1], $fn = 48);  // канал крізь дно (puck_void кінчається на puck_z[1]+1) в порожнину
 }
 
 module rib(a) {  // ребро (пілястра) від дна до верху п'ятачка: ±8°, внутрішня грань за ухилом
