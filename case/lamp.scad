@@ -45,6 +45,8 @@ base_wall = 5;             // стінка бетонної основи
 draft     = 1;             // ухил внутрішньої порожнини, градуси: сердечник виймається вгору
 pad       = [7, 7];        // п'ятачок під кільце: радіально, по висоті
 pad_a     = [0, 90, 180, 270];
+pad_half  = 8;             // ребро: півширина по дузі, градуси
+notch_a   = pad_half + 1;  // виїмка шасі під ребро: півширина, градуси
 insert    = [4.6, 5.7];    // латунна вставка: OD, довжина
 
 puck_fit = 0.25;           // зазор у комірі (у STEP шайба Ø80 у коміра Ø80 впритул)
@@ -66,7 +68,7 @@ chassis_d   = 91;
 chassis_fit = 0.2;
 chassis_t   = 3;
 cell        = [60, 20, 8];   // Li-Pol 850 мА·год з PCM і двостороннім скотчем — заміряно
-layers      = 3;             // два стоси по 3 = 6 комірок
+layers      = 2;             // два стоси по 2 = 4 комірки (≈3400 мА·год)
 bat_tol     = 0.5;
 pocket_wall = [1.2, 5];      // стінка навколо вітряка: товщина, висота
 esp  = [22.5, 18, 1.2];      // ESP32-C3 SuperMini — заміряти
@@ -75,7 +77,6 @@ groove = [6, 1.5];           // жолоб під дроти з колони д�
 cup_depth = 8;
 cup_wall  = 2;
 col_fit   = 0.2;
-refl = [102, 1.2];           // білий відбивач
 
 /* [Колона] */
 col_face = 12.5;   // грань восьмигранника
@@ -126,8 +127,8 @@ function off_r(z, w) = z < fil_c.y ? fil_c.x + sqrt(max(0, pow(fil_r - w, 2) - p
                  : z <= belt_z ? belt_r - w : belt_r - w * sqrt(1 + k * k) - k * (z - belt_z);
 function in_r(z) = off_r(z, wall);
 col_flat  = col_face / (2 * tan(22.5));  // половина розміру під ключ
-chassis_z = collar.z + 2;                // шасі лежить на верху коміра
-deck_z    = chassis_z + chassis_t;       // верх диска шасі
+deck_z    = 26.5;                        // верх диска шасі: кут нижньої комірки ≥26.2 (заокруглення дна), верх верхньої ≤26.9 (кільце)
+chassis_z = deck_z - chassis_t;          // шасі лежить на бетонному дні
 bat_top   = deck_z + layers * cell.z;
 refl_z    = bat_top;                     // відбивач лежить на акумуляторах
 cut_z     = 48.2;                         // верх основи / шов з плафоном (відбивач на 1 мм нижче)
@@ -135,7 +136,8 @@ ring_z0   = cut_z - lap;                  // верх п'ятачків: на н
 floor_z   = chassis_z;                    // верх бетонного дна
 bat_y0    = col_flat + col_fit + cup_wall + bat_tol;  // акумулятори двома стосами по боках колони (±Y), впритул до стакана
 bat_corner = norm([cell.x / 2 + bat_tol, bat_y0 + cell.y + bat_tol]);
-pocket_r  = in_r(deck_z) - 0.3;
+cav_r_top = off_r(cut_z, base_wall);
+pocket_r  = cav_r(deck_z) - 0.3;
 esp_x     = -(cell.x / 2 + bat_tol + pocket_wall[0] + 3 + esp.z / 2);  // ESP32 ребром за торцем акумуляторів
 pm_top    = usb_z + usb_below + ip5306.z;                   // стеля кишені = спина плати
 usb_hole  = plug + [2, 2] * plug_fit;                       // зенківка під корпус штекера
@@ -143,6 +145,7 @@ pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_
 sock_front = pm_x1 + usb_over;                             // торець гнізда USB-C
 win_x0    = sock_front - 0.5;                              // дно зенківки: трохи за торцем гнізда
 sleeve_r  = in_r(cut_z) - lap_fit;                          // зовнішній радіус манжети: стінка над поясом звужується, найвужче — на краю
+refl      = [floor(2 * (sleeve_r - lap_t - 0.3) * 2) / 2, 1.2];  // білий відбивач: під внутрішній радіус манжети, округлено вниз до 0.5
 bay_z     = cut_z - lap / 2 - bay.y / 2;                    // низ ламелі
 bay_a     = bay.x / sleeve_r * 180 / PI;                    // ламель по дузі, градуси
 bore      = col_bore - 2 * fit - 2 * guide_wall;            // отвір напрямної V1
@@ -157,11 +160,11 @@ wire_z    = [strip_z0 - wire_gap - wire_d / 2, strip_z1 + wire_gap + wire_d / 2]
 node_z0   = guide_z0;                     // вкладиш вузла дімера (V1 і V2) стоїть на поличках колони на цій висоті
 guide_top = pot1_face + 2;
 
-cav_r_top = off_r(cut_z, base_wall);
 function rib_r(z) = cav_r(z) - pad.x;  // внутрішня грань ребра: йде за ухилом, тож сердечник виймається
 function cav_r(z) = min(off_r(z, base_wall), cav_r_top - tan(draft) * (cut_z - z));  // порожнина основи з ухилом
 
-echo(str("Внутрішній радіус чаші: z=27 → ", in_r(27), ", z=", bat_top, " → ", in_r(bat_top)));
+notch_r   = rib_r(chassis_z) - 0.3;      // виїмка шасі під ребро: чиста від грані ребра внизу, де вона найближча до осі
+echo(str("Шасі: notch_r = ", notch_r, ", refl[0] = ", refl[0], " | Порожнина основи: cav_r(", deck_z, ") = ", cav_r(deck_z), ", кут комірки ", bat_corner, ", верх комірок ", bat_top, " (кільце ", ring_z0, ")"));
 echo(str("Вал у хвостовику: V1 ", pot1_face + pot1_shaft - boss[1], ", V2 ", pot2_face + pot2_shaft - boss[1]));
 
 for (z = [floor_z : 0.5 : cut_z - 0.5]) assert(cav_r(z + 0.5) >= cav_r(z) - 1e-6, "порожнина основи має піднутрення: сердечник не вийде");
@@ -169,13 +172,23 @@ for (z = [floor_z : 0.5 : cut_z - 0.5]) assert(rib_r(z + 0.5) >= rib_r(z) - 1e-6
 // нормальна товщина стінки (до зовнішнього контуру) вздовж порожнини; нижче z=20 стінку тримає суцільне дно
 function wall_n(z) = z < fil_c.y ? fil_r - norm([cav_r(z) - fil_c.x, z - fil_c.y])
                    : z <= belt_z ? belt_r - cav_r(z) : (belt_r - k * (z - belt_z) - cav_r(z)) / sqrt(1 + k * k);
+// вікно акумуляторів: кут нижньої комірки під заокругленням, верх під кільцем, шасі й комірки повз ребра
+function chassis_pass_ok(a) =  // шасі опускають згори повз ребро на куті a: виїмка чиста від rib_r(z) на всій висоті ребра + 0.3
+  notch_r + 0.3 <= min([for (z = [chassis_z : 0.5 : ring_z0 + 0.3]) rib_r(z)])
+  && (notch_a - pad_half) * PI / 180 * notch_r >= 0.3;
+assert(bat_corner + 0.3 <= cav_r(deck_z), "кут нижньої комірки впирається в заокруглення дна основи");
+assert(bat_top + 0.3 <= ring_z0, "верхня комірка зачіпає байонетне кільце");
+assert(chassis_d / 2 + chassis_fit <= cav_r(chassis_z), "шасі не лягає на дно основи");
+for (a = pad_a) assert(chassis_pass_ok(a), "шасі не проходить повз ребро при складанні");
+assert(refl[0] / 2 + 0.3 <= sleeve_r - lap_t, "відбивач не влазить у манжету плафона");
+// стос (з рамкою) і ESP32 — під внутрішньою гранню ребра на 90°/270° та 180°; rib_r росте вгору, тож мінімум на deck_z
+assert(norm([(bat_y0 + cell.y + bat_tol + pocket_wall[0]) * tan(pad_half), bat_y0 + cell.y + bat_tol + pocket_wall[0]]) + 0.3 <= rib_r(deck_z), "стос акумуляторів зачіпає ребро на 90°/270°");
+assert(-esp_x + esp.z / 2 + 3 + 0.3 <= rib_r(deck_z), "ESP32 з деталями зачіпає ребро на 180°");
 // z<20 — кут на суцільному фундаменті (нормальна стінка 4→5), перевіряємо від початку дуги зсуву
 assert(puck_z[1] < floor_z + 1, "канал під дроти не доходить до порожнини основи");
 for (z = [fil_c.y - fil_r + base_wall : 0.5 : cut_z]) assert(wall_n(z) >= base_wall - 0.2, "стінка основи тонша за base_wall");
 assert(pm_top + 3 <= floor_z, "бетон над кишенею IP5306 тонший за 3 мм");
-assert(bat_corner + 0.5 < pocket_r, "акумулятори впираються в чашу");
 assert(norm([-esp_x + esp.z / 2 + 3, esp.x / 2]) < pocket_r, "ESP32 з деталями впирається в чашу");
-assert(sleeve_r - lap_t > bat_corner + 0.5, "манжета плафона зачіпає акумулятори");
 assert(top_z - (cut_z - lap) <= 180 && cut_z - ring_z <= 180, "деталь шейдера вища за стіл принтера");
 assert(node_top < col_top && col_top < plate_z[0] - 0.3, "вузол дімера має бути в колоні, а колона — під пластиною");
 assert(boss[0] + 0.4 < col_bore / 2 - key[0], "хвостовик дімера зачіпає ребро в колоні");
@@ -183,10 +196,8 @@ assert(pot1_face + pot1_shaft - boss[1] >= 6, "вал V1 заходить у х�
 assert(pot2_face + pot2_shaft - boss[1] >= 6, "вал V2 заходить у хвостовик дімера менше ніж на 6 мм");
 assert(boss[1] + shaft_hole > max(pot1_face + pot1_shaft, pot2_face + pot2_shaft) + 0.5, "вал упирається в дно отвору дімера");
 assert(boss[1] - node_top > v1_travel + 0.3, "втулка торкається хвостовика дімера");
-assert(chassis_d / 2 + chassis_fit <= in_r(chassis_z), "шасі не проходить у чашу на z=27");
 assert(col_flat + col_fit + cup_wall <= (cell.x - cell.y) / 2, "стакан колони не влазить у центр вітряка");
 assert(v1_travel > sb_stroke && v1_travel < dim_z[0] - plate_z[1], "хід каретки V1: має натиснути кнопку і не впертися дімером у плафон");
-assert(refl[0] / 2 < in_r(refl_z + refl[1]), "відбивач не влазить у плафон");
 assert(wire_z[0] + wire_d / 2 < strip_z0 && wire_z[1] - wire_d / 2 > strip_z1, "отвір під дроти заходить під смугу");
 assert(wire_z[0] - wire_d / 2 > deck_z + cup_depth, "нижній отвір під дроти схований у стакані шасі");
 assert(wire_z[1] + wire_d / 2 < node_z0 && node_z0 <= col_top, "верхній отвір під дроти впирається у вузол дімера або виходить за колону");
@@ -270,8 +281,8 @@ module base_void() {
   translate([chan_x, 0, puck_z[1]]) cylinder(d = chan_d, h = floor_z + 1 - puck_z[1], $fn = 48);  // канал крізь дно (puck_void кінчається на puck_z[1]+1) в порожнину
 }
 
-module rib(a) {  // ребро (пілястра) від дна до верху п'ятачка: ±8°, внутрішня грань за ухилом
-  rotate(a - 8) rotate_extrude(angle = 16)
+module rib(a) {  // ребро (пілястра) від дна до верху п'ятачка: ±pad_half, внутрішня грань за ухилом
+  rotate(a - pad_half) rotate_extrude(angle = 2 * pad_half)
     polygon(concat([for (z = [floor_z : 1 : ring_z0]) [rib_r(z), z]], [for (z = [ring_z0 : -1 : floor_z]) [cav_r(z) + 1, z]]));
 }
 
@@ -322,6 +333,8 @@ module chassis() {
       rotate(90) rails([esp.x, esp.z], [0, -esp_x]);  // паз: плата стоїть ребром
     }
     translate([chan_x, 0, chassis_z - 1]) cylinder(d = chan_d, h = chassis_t + 2, $fn = 48);
+    for (a = pad_a) rotate(a - notch_a) translate([0, 0, chassis_z - 1]) rotate_extrude(angle = 2 * notch_a)  // виїмки під ребра
+      translate([notch_r, 0]) square([chassis_d, deck_z + pocket_wall[1] - chassis_z + 2]);
     rotate(180) translate([0, -groove.x / 2, deck_z - groove.y]) cube([-esp_x, groove.x, groove.y + 0.01]);  // до ESP32
   }
 }
