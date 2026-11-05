@@ -28,13 +28,13 @@ top_wall = 1.2;   // стінка плафона: 2 лінії по 0.6 — шв
 plate_z  = [174.43, 176.43];  // верхня пластина 2 мм; опущена на 0.75, щоб дімер 2.5 мм став урівень
 plate_hole_d = 20;
 recess_r = 67.5 * S;          // заглиблення під дімер
-collar   = [40 * S, 42 * S, 17];  // комір під шайбу: r внутрішній, r зовнішній, z центру заокруглення R2
+collar   = [40 * S, 42 * S, 17];  // комір під ніжку: r внутрішній, r зовнішній, z центру заокруглення R2
 
 /* [Байонет] */
 lap      = 5;     // напуск плафона в основу
 lap_fit  = 0.2;
 lap_t    = 1.6;   // товщина манжети плафона
-ring_t   = 2.5;   // радіальна товщина байонетного кільця (висота — lap)
+ring_t   = 2.6;   // радіальна товщина байонетного кільця (висота — lap); 2.6 — щоб стінка за пазом лишилась ≥ 1.2 при ring_fit = 0.3
 tab_t    = 2.4;   // вушко кільця під кільцем: висота
 bay      = [10, 2, 1.0]; // ламель: по дузі, по висоті, радіально
 bay_n    = 4;
@@ -44,6 +44,7 @@ bay_pre  = 0.05;   // натяг: у кінці повороту стеля ти
 bay_rim  = 1.0;   // бортик над стелею паза на вході
 bay_fit  = 0.2;
 bump_sq  = 0.15;  // стиск ламелі на горбику понад зазор паза — налаштувати після пробного друку
+bump_clr = 0.1;   // зазор між піднятим низом ламелі й вершиною горбика
 bump_h   = 2 * bay_fit + bump_sq;   // висота горбика над дном паза (зазор паза 2·bay_fit)
 bay_foot = 1.5;   // «п'ятка» ламелі (задній край, градуси) — єдина частина, що доходить до горбика; решта знизу виїмчаста
 bay_lock = 1.5;   // горбик закінчується за стільки градусів до заднього краю ламелі в замкненому положенні
@@ -71,8 +72,11 @@ pad_a     = [0, 90, 180, 270];
 pad_half  = 8;             // ребро: півширина по дузі, градуси
 notch_a   = pad_half + 1;  // виїмка шасі під ребро: півширина, градуси
 insert    = [4.6, 5.7];    // латунна вставка: OD, довжина
+screw_len = 6;             // гвинт кільця M3×L з потайною головкою
+ring_fit  = 0.3;           // зазор кільця й вушок до бетону (радіально) — налаштувати після пробного друку, за потреби підшліфувати зовнішню грань кільця
+esp_slot_pad = 0.6;          // відбивач: запас навколо ESP32 у проріз (0.3 зазор + 0.3 люфт шасі/колони)
 
-puck_fit = 0.25;           // зазор у комірі (у STEP шайба Ø80 у коміра Ø80 впритул)
+puck_fit = 0.25;           // зазор у комірі (у STEP ніжка Ø80 у коміра Ø80 впритул)
 puck_d   = 2 * collar[0] - 2 * puck_fit;
 puck_z   = [5, collar.z];
 ip5306   = [21, 25, 1.2];  // ширина (край з USB-C), довжина, товщина плати — заміряти
@@ -93,7 +97,7 @@ chassis_t   = 3;
 cell        = [60, 20, 8];   // Li-Pol 850 мА·год з PCM і двостороннім скотчем — заміряно
 layers      = 2;             // два стоси по 2 = 4 комірки (≈3400 мА·год)
 bat_tol     = 0.5;
-pocket_wall = [1.2, 5];      // стінка навколо вітряка: товщина, висота
+pocket_wall = [1.2, 5];      // стінка навколо стосів акумуляторів: товщина, висота
 esp  = [22.5, 18, 1.2];      // ESP32-C3 SuperMini — заміряти
 rail = [1.2, 3];             // напрямні під плати: товщина, висота
 groove = [6, 1.5];           // жолоб під дроти з колони до ESP32 (під акумуляторами)
@@ -165,11 +169,11 @@ pocket_r  = cav_r(deck_z) - 0.3;
 esp_x     = -(cell.x / 2 + bat_tol + pocket_wall[0] + 3 + esp.z / 2);  // ESP32 ребром за торцем акумуляторів
 pm_top    = usb_z + usb_below + ip5306.z;                   // стеля кишені = спина плати
 usb_hole  = plug + [2, 2] * plug_fit;                       // зенківка під корпус штекера
-pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_fit;  // край плати з USB-C: кути кишені ≥1.2 від боку шайби
+pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_fit;  // край плати з USB-C: кути кишені ≥1.2 від боку ніжки
 sock_front = pm_x1 + usb_over;                             // торець гнізда USB-C
 win_x0    = sock_front - 0.5;                              // дно зенківки: трохи за торцем гнізда
-// кільце сидить у бетоні зазором 0.1 по мінімальному радіусу порожнини (без ухилу): так просто й стінка за пазом не тонша
-ring_r    = [cav_r(cut_z) - ring_t, cav_r(ring_z0) - 0.1];             // внутрішній, зовнішній
+// кільце сидить у бетоні зазором ring_fit по мінімальному радіусу порожнини (без ухилу): так просто й стінка за пазом не тонша
+ring_r    = [cav_r(cut_z) - ring_t, cav_r(ring_z0) - ring_fit];             // внутрішній, зовнішній
 sleeve_r  = ring_r[0] - lap_fit;                            // зовнішній радіус манжети
 refl      = [floor(2 * (min(sleeve_r - lap_t, cav_r(refl_z)) - 0.3) * 2) / 2, 1.2];  // білий відбивач: під манжету і під стінку основи (він нижче кільця), вниз до 0.5
 refl_notch_r = rib_r(rib_top) - 0.3;     // виїмки відбивача під вушка кільця (вони внизу стирчать далі за ребро, але rib_r росте вгору)
@@ -184,8 +188,8 @@ bump_b0   = bump_b1 - 2 * bump_fl;
 bay_end   = bay_a + bay_turn;                               // кінець паза по дузі
 bay_r1    = sleeve_r + bay.z + bay_fit;                     // зовнішній радіус паза
 tab_in    = rib_r(rib_top);                                 // вушко: від грані ребра
-tab_out   = cav_r(rib_top) - 0.1;                           // до стінки основи
-hole_r    = ring_r[0] - 6.5 / 2 - 0.2;                      // вісь вставки/гвинта: голівка (cs[1] = 6.5) цілком в отворі кільця, доступна зверху
+tab_out   = cav_r(rib_top) - ring_fit;                           // до стінки основи
+hole_r    = ring_r[0] - 6.5 / 2 - 0.12;                     // вісь вставки/гвинта: голівка (cs[1] = 6.5) цілком в отворі кільця, доступна зверху
 cs        = [3.4, 6.5, 0.2];                                // отвір, зенківка 90°, піднесення манжети над головкою
 bore      = col_bore - 2 * fit - 2 * guide_wall;            // отвір напрямної V1
 carr_d    = bore - 2 * fit;
@@ -218,8 +222,10 @@ assert(chassis_d / 2 + chassis_fit <= cav_r(chassis_z), "шасі не ляга�
 // виїмки шасі й відбивача (notch_r, refl_notch_r) виведені з rib_r у найвужчому місці (rib_r не спадає вгору), тож лишається перевірити запас по дузі
 assert((notch_a - pad_half) * PI / 180 * notch_r >= 0.3, "виїмка шасі вужча за ребро: запас по дузі < 0.3");
 assert(refl[0] / 2 + 0.3 <= cav_r(refl_z), "відбивач упирається в стінку основи");
-assert(refl_notch_r + 0.3 <= rib_r(refl_z) && (notch_a - pad_half) * PI / 180 * refl_notch_r >= 0.3, "виїмка відбивача не чиста від ребра");
+assert(tab_in - refl_notch_r >= 0.3 - 1e-6 && (notch_a - pad_half) * PI / 180 * tab_in >= 0.3, "виїмка відбивача не чиста від вушка кільця: радіально чи по дузі < 0.3");   // вушко (rib_top…+tab_t) — справжній сусід відбивача, ребра на цій висоті немає
 assert(refl[0] / 2 + 0.3 <= sleeve_r - lap_t, "відбивач не влазить у манжету плафона");
+// ESP32 стоїть від deck_z до deck_z + esp.y і проходить крізь шар відбивача (refl_z…+refl[1]): потрібен проріз із запасом 0.3
+assert(refl_z >= deck_z + esp.y + 0.3 || esp_slot_pad >= 0.3, "ESP32 проходить крізь відбивач: потрібен проріз із запасом ≥ 0.3");
 // стос (з рамкою) і ESP32 — під внутрішньою гранню ребра на 90°/270° та 180°; rib_r росте вгору, тож мінімум на deck_z
 assert(norm([(bat_y0 + cell.y + bat_tol + pocket_wall[0]) * tan(pad_half), bat_y0 + cell.y + bat_tol + pocket_wall[0]]) + 0.3 <= rib_r(deck_z), "стос акумуляторів зачіпає ребро на 90°/270°");
 assert(-esp_x + esp.z / 2 + 3 + 0.3 <= rib_r(deck_z), "ESP32 з деталями зачіпає ребро на 180°");
@@ -227,7 +233,7 @@ assert(-esp_x + esp.z / 2 + 3 + 0.3 <= rib_r(deck_z), "ESP32 з деталями
 assert(puck_z[1] < floor_z + 1, "канал під дроти не доходить до порожнини основи");
 for (z = [fil_c.y - fil_r + base_wall : 0.5 : cut_z]) assert(wall_n(z) >= base_wall - 0.2, "стінка основи тонша за base_wall");
 assert(pm_top + 3 <= floor_z, "бетон над кишенею IP5306 тонший за 3 мм");
-assert(norm([-esp_x + esp.z / 2 + 3, esp.x / 2]) < pocket_r, "ESP32 з деталями впирається в чашу");
+assert(norm([-esp_x + esp.z / 2 + 3, esp.x / 2]) < pocket_r, "ESP32 з деталями впирається в стінку основи");
 assert(top_z - (cut_z - lap) <= 180 && cut_z - ring_z <= 180, "деталь шейдера вища за стіл принтера");
 assert(node_top < col_top && col_top < plate_z[0] - 0.3, "вузол дімера має бути в колоні, а колона — під пластиною");
 assert(boss[0] + 0.4 < col_bore / 2 - key[0], "хвостовик дімера зачіпає ребро в колоні");
@@ -235,25 +241,24 @@ assert(pot1_face + pot1_shaft - boss[1] >= 6, "вал V1 заходить у х�
 assert(pot2_face + pot2_shaft - boss[1] >= 6, "вал V2 заходить у хвостовик дімера менше ніж на 6 мм");
 assert(boss[1] + shaft_hole > max(pot1_face + pot1_shaft, pot2_face + pot2_shaft) + 0.5, "вал упирається в дно отвору дімера");
 assert(boss[1] - node_top > v1_travel + 0.3, "втулка торкається хвостовика дімера");
-assert(col_flat + col_fit + cup_wall <= (cell.x - cell.y) / 2, "стакан колони не влазить у центр вітряка");
+assert(col_flat + col_fit + cup_wall <= (cell.x - cell.y) / 2, "стакан колони не влазить у центр між стосами");
 assert(v1_travel > sb_stroke && v1_travel < dim_z[0] - plate_z[1], "хід каретки V1: має натиснути кнопку і не впертися дімером у плафон");
 assert(wire_z[0] + wire_d / 2 < strip_z0 && wire_z[1] - wire_d / 2 > strip_z1, "отвір під дроти заходить під смугу");
 assert(wire_z[0] - wire_d / 2 > deck_z + cup_depth, "нижній отвір під дроти схований у стакані шасі");
 assert(wire_z[1] + wire_d / 2 < node_z0 && node_z0 <= col_top, "верхній отвір під дроти впирається у вузол дімера або виходить за колону");
 assert((cell.x - cell.y) / 2 - col_flat >= strip_pcb, "кінець смуги з пайкою не влазить між колоною й акумуляторами");
 assert(strip_z0 + pitch_led / 2 - 2.5 > refl_z + refl[1], "перший LED під відбивачем");
-assert(abs(chan_x) + chan_d / 2 < col_bore / 2, "канал з шайби має виходити всередину колони");
+assert(abs(chan_x) + chan_d / 2 < col_bore / 2, "канал з ніжки має виходити всередину колони");
 assert(pm_x1 - ip5306.y > chan_x + chan_d / 2 + 1, "плата IP5306 налазить на канал під дроти");
-assert(norm([pm_x1 + pm_fit, ip5306.x / 2 + pm_fit]) < puck_d / 2 - 1, "кишеня IP5306 прориває бік шайби");
+assert(norm([pm_x1 + pm_fit, ip5306.x / 2 + pm_fit]) < puck_d / 2 - 1, "кишеня IP5306 прориває бік ніжки");
 assert(win_x0 <= sock_front && win_x0 >= sock_front - 0.5, "дно зенківки USB-C має бути в межах 0.5 мм від торця гнізда");
 assert(pm_x1 <= sock_front, "плата IP5306 заходить у шлях штекера");
 assert(usb_hole.x >= plug.x + 0.3 && usb_hole.y >= plug.y + 0.3, "корпус штекера не проходить у зенківку");
-assert(usb_z - usb_hole.y / 2 > puck_z[0] + 1, "зенківка USB-C прориває низ шайби");
+assert(usb_z - usb_hole.y / 2 > puck_z[0] + 1, "зенківка USB-C прориває низ ніжки");
 assert(usb_sock.y < usb_hole.x && usb_sock.z < usb_hole.y, "гніздо більше за зенківку");
 top_in = in_r(cut_z + 1) + wall - top_wall;  // внутрішній радіус плафона над швом (наближено, конус майже вертикальний)
 assert(top_wall / 2 < top_wall - 0.5, "стінка плафона < 1 мм: кільце зрощення з манжетою не заходить у неї");
 assert(ring_t - (bay.z + bay_fit) >= 1.2, "стінка кільця за пазом < 1.2");
-assert(ring_r[1] <= cav_r(cut_z) + 0.01 && ring_r[1] <= cav_r(ring_z0) + 0.01, "кільце не входить у бетон");
 assert(ring_r[1] - bay_r1 >= 1.2, "справжня стінка кільця за пазом < 1.2");
 assert(bay_ramp + bay.y + 2 * bay_fit + bump_h < lap - 1, "паз зі скосом не вміщується у висоту кільця");
 assert(bay_n * (bay_end + bay_s + 2) < 360, "пази 4 ламелей перекриваються");
@@ -263,21 +268,22 @@ assert(bay_top - bay.y - bay_m * bay_a > cut_z - lap, "ламель зісков
 assert(ring_r[0] >= norm([-esp_x + esp.z / 2 + 3, esp.x / 2]) + 0.3, "кільце зачіпає ESP32");
 // вушка: від грані ребра до стінки, під кільцем; зенківка в них, зазори до акумуляторів, ESP32 і виїмок
 assert(tab_t - cs[2] >= (cs[1] - cs[0]) / 2, "вушко тонше за зенківку");
+// гвинт: голівка врівень з низом кільця (зенківка), кінчик не дійшов до дна отвору вставки і в різьбі вставки ≥ 3 мм
+screw_tip = ring_z0 - cs[2] - screw_len;
+assert(screw_tip >= rib_top - insert[1] + 0.5, "гвинт кільця впирається в дно отвору вставки");
+assert(rib_top - screw_tip >= 3, "гвинт кільця заходить у вставку менше ніж на 3 мм різьби");
 assert(hole_r + cs[1] / 2 + 0.1 <= ring_r[0], "головка гвинта під кільцем: недоступна зверху");
 assert(hole_r - insert[0] / 2 - rib_r(rib_top) >= 1.0 && cav_r(rib_top) - hole_r - insert[0] / 2 >= 1.0, "бетону навколо вставки < 1.0 мм");
 assert(bump_sq - bay_pre >= 0.05, "стиск на горбику не більший за натяг у кінці: клацу не буде");
 assert(abs(bump_b1 - (bay_turn - bay_lock)) < 1e-9 && bump_b0 > bay_a + bay_s, "горбик має бути виведений з bay_turn і лежати за входом");
 assert(atan(bump_h / (bump_fl * PI / 180 * ring_r[0])) <= 30, "похилий бік горбика крутіший за 30°");
 assert(bay_lock * PI / 180 * ring_r[0] >= 1, "у замку п'ятка ламелі ближче 1 мм до горбика");
-assert(bay_foot > 0 && bay_foot < bay_a && bay.y - bump_h >= 1, "п'ятка/виїмка ламелі некоректні");
+assert(bay_foot > 0 && bay_foot < bay_a && bay.y - bump_h - bump_clr >= 1, "п'ятка/виїмка ламелі некоректні");
 assert(tab_t - cs[2] - (cs[1] - cs[0]) / 2 >= 0.6, "під зенківкою вушка лишається менше 0.6 мм");
 assert(tab_in <= hole_r - cs[1] / 2 - 0.1 && hole_r + cs[1] / 2 <= tab_out, "зенківка виходить за вушко");
-assert(tab_in - refl_notch_r >= 0.3 - 1e-6, "вушко ближче 0.3 до виїмки відбивача");
-assert(tab_in - (rib_r(chassis_z) - 0.3) >= 0.3, "вушко ближче 0.3 до виїмки шасі");
 assert((notch_a - pad_half) * PI / 180 * tab_in >= 0.3, "вушко ближче 0.3 до виїмки по дузі");
 assert(tab_in >= norm([(bat_y0 + cell.y + bat_tol + pocket_wall[0]) * tan(pad_half), bat_y0 + cell.y + bat_tol + pocket_wall[0]]) + 0.3, "вушко зачіпає акумулятори");
 assert(tab_in >= -esp_x + esp.z / 2 + 3 + 0.3, "вушко зачіпає ESP32");
-assert(refl[0] / 2 < sleeve_r - lap_t - 0.3, "відбивач не влазить у манжету плафона");
 
 // --- шейдер ---
 function arc(c, r, a0, a1, n = 30) = [for (i = [0:n]) c + r * [cos(a0 + (a1 - a0) * i / n), sin(a0 + (a1 - a0) * i / n)]];
@@ -298,7 +304,7 @@ module shade_profile(w = wall) {
       translate([collar[0], ring_z]) square([collar[1] - collar[0], collar.z - ring_z]);       // комір
       intersection() { translate([collar[0], collar.z]) circle(r = 2, $fn = 48); translate([collar[0], 0]) square(100); }
     }
-    translate([-1, ring_z - 1]) square([collar[0] + 1, collar.z]);   // середина відкрита під шайбу
+    translate([-1, ring_z - 1]) square([collar[0] + 1, collar.z]);   // середина відкрита під ніжку
     translate([-1, plate_z[1]]) square([recess_r + 1, 10]);          // заглиблення під дімер
     translate([-1, 0]) square([plate_hole_d / 2 + 1, 300]);          // отвір Ø20
   }
@@ -330,7 +336,7 @@ module shade_top() {
   // ламелі: верх і низ спадають уздовж дуги, як стеля паза (гвинтова поверхня того ж кроку)
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) {
     ramp_arc(sleeve_r - 0.5, sleeve_r + bay.z, 0, bay_foot, bay_top - bay.y, bay.y, 3);   // п'ятка: повна висота
-    ramp_arc(sleeve_r - 0.5, sleeve_r + bay.z, bay_foot, bay_a, bay_top - bay.y - bay_m * bay_foot + bump_h, bay.y - bump_h, 3);   // решта: низ піднято на висоту горбика
+    ramp_arc(sleeve_r - 0.5, sleeve_r + bay.z, bay_foot, bay_a, bay_top - bay.y - bay_m * bay_foot + bump_h + bump_clr, bay.y - bump_h - bump_clr, 3);   // решта: низ піднято на висоту горбика й зазор над його вершиною
   }
 }
 
@@ -378,7 +384,7 @@ module bay_ring() {
 // --- основа: бетонна відливка (стінка 5, порожнина з ухилом) ---
 module puck_void() {
   translate([chan_x - chan_d / 2, -ip5306.x / 2 - pm_fit, puck_z[0] - 1]) cube([pm_x1 + pm_fit - chan_x + chan_d / 2, ip5306.x + 2 * pm_fit, pm_top - puck_z[0] + 1]);
-  // зенківка від торця гнізда назовні: корпус штекера заходить до торця, гніздо стоїть глибше за бік шайби
+  // зенківка від торця гнізда назовні: корпус штекера заходить до торця, гніздо стоїть глибше за бік ніжки
   translate([win_x0, -usb_hole.x / 2, usb_z - usb_hole.y / 2]) cube([puck_d / 2 + 1 - win_x0, usb_hole.x, usb_hole.y]);
   translate([chan_x, 0, puck_z[0]]) cylinder(d = chan_d, h = puck_z[1] - puck_z[0] + 1, $fn = 48);
 }
@@ -431,8 +437,7 @@ module puck_core() {  // вкладиш: кишеня IP5306 + канал (пл�
 // виштовхнути puck_core вниз крізь низ основи; витягти usb_core вбік +X.
 // Після розпалубки: збити стовпчики від випусків — рівно з поверхнею на дні порожнини (там сідає шасі) і на верхах ребер (там сідають вушка кільця).
 // Друк: зовнішні половини зовнішньою гранню вниз, плавником вгору (установчі штирі виступають із площини рознім).
-// Випуски: Ø4 у бортику (над стінкою), Ø2.8 крізь дно сердечника і стелі пазів — у бетоні лишаться стовпчики, їх збити (на дні — рівно з поверхнею, там сідає шасі).
-// --- форма для відливки: відкритий верх = край чаші (там заливка і сердечник), низ основи (z=5) на дні форми ---
+// --- форма для відливки: відкритий верх = край основи (там заливка і сердечник), низ основи (z=5) на дні форми ---
 module base_outer_2d(top) {  // профіль зовнішньої поверхні основи (x ≥ 0), з ніжкою
   intersection() {
     union() { shade_envelope(); translate([0, puck_z[0]]) square([puck_d / 2, ring_z - puck_z[0] + 1]); }
@@ -471,7 +476,7 @@ module mold_outer(side) {   // side ±1: половина по y ≥ 0 / y ≤ 0
 
 module mold_pin() { translate([hole_r, 0, rib_top - insert[1]]) cylinder(d = mold_pin_d, h = insert[1] + 1, $fn = 48); }  // латунна вставка надівається знизу і впирається в сердечник; штирі зроблені разом із сердечником (окремо не друкується)
 
-module mold_core(solid = false, vents = true) {   // порожнина основи (без каналів шайби) з пазами під ребра; порожнистий, бортик лягає на край форми; solid — без порожнини, vents — з випусками (обидва прапорці лише для перевірок)
+module mold_core(solid = false, vents = true) {   // порожнина основи (без каналів ніжки) з пазами під ребра; порожнистий, бортик лягає на край форми; solid — без порожнини, vents — з випусками (обидва прапорці лише для перевірок)
   rim = off_r(cut_z - 5, 0) + mold_t * sqrt(1 + k * k) + mold_fit;   // внутрішній радіус спідниці: охоплює форму на всю її глибину (конус розширюється донизу)
   module cav(z0, w, ztop) { rotate_extrude() polygon(concat([[0, z0]], [for (z = [z0 : 1 : cut_z]) [cav_r(z) - w, z]], [[cav_r(cut_z) - w, ztop], [0, ztop]])); }
   difference() {
@@ -536,7 +541,7 @@ module chassis() {
   difference() {
     union() {
       translate([0, 0, chassis_z]) cylinder(d = chassis_d, h = chassis_t);
-      translate([0, 0, deck_z]) linear_extrude(pocket_wall[1]) intersection() {  // рамки під два стоси, обрізані по колу чаші
+      translate([0, 0, deck_z]) linear_extrude(pocket_wall[1]) intersection() {  // рамки під два стоси, обрізані по колу порожнини основи
         for (sd = [-1, 1]) translate([0, sd * (bat_y0 - bat_tol + box.y / 2)]) difference() {
           square(box + 2 * [1, 1] * pocket_wall[0], center = true); square(box, center = true);
         }
@@ -555,6 +560,7 @@ module chassis() {
 module reflector() {
   translate([0, 0, refl_z]) linear_extrude(refl[1]) difference() {
     circle(d = refl[0]); octagon(col_flat + strip_t + 0.3);  // пропускає смугу
+    translate([esp_x - esp.z / 2 - esp_slot_pad, -esp.x / 2 - esp_slot_pad]) square([esp.z + 3 + 2 * esp_slot_pad, esp.x + 2 * esp_slot_pad]);  // проріз під ESP32 (стоїть ребром до 44.5, разом з деталями 3 мм)
     for (a = pad_a) rotate(a - notch_a) polygon(concat([for (t = [0 : 1 : 2 * notch_a]) refl_notch_r * [cos(t), sin(t)]], [for (t = [2 * notch_a : -1 : 0]) refl[0] * [cos(t), sin(t)]]));  // виїмка під ребро
   }
 }
@@ -622,7 +628,7 @@ module dimmer() {
 module batteries() { for (sd = [-1, 1], l = [0:layers - 1]) cell_at(sd, l); }
 
 module pcb() {
-  translate([pm_x1 - ip5306.y, -ip5306.x / 2, pm_top - ip5306.z]) cube(ip5306);                       // IP5306 компонентами донизу
+  translate([pm_x1 - ip5306.y, -ip5306.x / 2, pm_top - ip5306.z]) cube([ip5306.y, ip5306.x, ip5306.z]);                       // IP5306 компонентами донизу
   translate([sock_front - usb_sock.x, -usb_sock.y / 2, usb_z - usb_sock.z / 2]) cube(usb_sock);       // гніздо USB-C
   translate([esp_x - esp.z / 2, -esp.x / 2, deck_z]) cube([esp.z, esp.x, esp.y]);  // стоїть ребром
 }
@@ -657,12 +663,12 @@ module scene(cut) {
 
 // --- форма для відливки: asserts ---
 base_h    = cut_z - 5;
-pc_reach  = puck_d / 2 + 1;                        // куди доходить зенківка puck_core (поза бік шайби)
+pc_reach  = puck_d / 2 + 1;                        // куди доходить зенківка puck_core (поза бік ніжки)
 mold_ro   = off_r(cut_z, 0);                       // зовнішній радіус основи на верхньому краї
 mold_pc_top = floor_z + 1;                         // верх puck_core: заходить у гніздо сердечника над дном
 assert(mold_t >= 2.4, "стінка форми тонка: прогнеться під бетоном");
 assert(max(base_h, 2 * (belt_r + mold_t + mold_flange)) <= 180 && 2 * (mold_tab_x + 5) <= 180, "частина форми не влазить на стіл A1 mini");
-assert(2 * (off_r(cut_z - 5, 0) + mold_t * sqrt(1 + k * k) + mold_fit + mold_skirt) <= 180 && cut_z + mold_cf - (rib_top - insert[1]) <= 180, "сердечник не влазить на стіл A1 mini");
+assert(2 * (off_r(cut_z - 5, 0) + mold_t * sqrt(1 + k * k) + mold_fit + mold_skirt) <= 180 && cut_z + mold_cf - floor_z <= 180, "сердечник не влазить на стіл A1 mini");
 assert(mold_fin_t - 4 / 2 >= 2 && mold_low_x - mold_bolt_d / 2 - (puck_d / 2 + mold_t) >= 2 && mold_tab_x - 2 > mold_ro + mold_t, "вставка/болт надто близько до краю плавника");
 assert(mold_tab_y - insert[0] / 2 >= 1.2 && mold_boss.y - mold_tab_y - insert[0] / 2 >= 1.2 && mold_boss.x / 2 - insert[0] / 2 >= 1.2 && mold_boss.z - 9 >= 1.2, "стінка бобишки навколо вставки бортика < 1.2 мм");
 assert(mold_tab_x - mold_boss.x / 2 >= mold_ro + mold_t - 0.5 && mold_tab_x + mold_boss.x / 2 <= mold_ro + mold_t + mold_flange, "бобишка вставки виходить за плавник");
