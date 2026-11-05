@@ -7,7 +7,7 @@
 // Найвища друкована деталь ≤ 180 (Bambu A1 mini). STL складаються у збірку без зсувів; друкувати — повернувши в слайсері.
 // Розміри в мм. Значення з позначкою «заміряти» — номінальні, звір зі своїми деталями.
 //
-// Вигляд згори: +X — USB-C у боці шайби, ±Y — акумулятори, −X — ESP32 (стоїть ребром).
+// Вигляд згори: +X — USB-C у боці основи, ±Y — акумулятори, −X — ESP32 (стоїть ребром).
 
 part    = "assembly";  // shade_top, base, puck_core, chassis, reflector, column, knob_v1_carriage,
                        // knob_v1_guide, knob_v2_cap, dimmer, batteries, pcb, pot_v1, pot_v2, assembly, section
@@ -122,9 +122,9 @@ $fn = 180;
 
 // --- похідні розміри ---
 k        = (belt_r - cone_top.x) / (cone_top.y - belt_z);    // нахил конуса dr/dz
-cone_in  = belt_r - wall * sqrt(1 + k * k);                 // внутрішній конус на верху поясу
-function in_r(z) = z < fil_c.y ? fil_c.x + sqrt(pow(fil_r - wall, 2) - pow(fil_c.y - z, 2))
-                 : z <= belt_z ? belt_r - wall : cone_in - k * (z - belt_z);
+function off_r(z, w) = z < fil_c.y ? fil_c.x + sqrt(max(0, pow(fil_r - w, 2) - pow(fil_c.y - z, 2)))  // радіус контуру, відступленого всередину на w по нормалі
+                 : z <= belt_z ? belt_r - w : belt_r - w * sqrt(1 + k * k) - k * (z - belt_z);
+function in_r(z) = off_r(z, wall);
 col_flat  = col_face / (2 * tan(22.5));  // половина розміру під ключ
 chassis_z = collar.z + 2;                // шасі лежить на верху коміра
 deck_z    = chassis_z + chassis_t;       // верх диска шасі
@@ -142,7 +142,7 @@ usb_hole  = plug + [2, 2] * plug_fit;                       // зенківка 
 pm_x1     = sqrt(pow(puck_d / 2 - 1.2, 2) - pow(ip5306.x / 2 + pm_fit, 2)) - pm_fit;  // край плати з USB-C: кути кишені ≥1.2 від боку шайби
 sock_front = pm_x1 + usb_over;                             // торець гнізда USB-C
 win_x0    = sock_front - 0.5;                              // дно зенківки: трохи за торцем гнізда
-sleeve_r  = in_r(cut_z) - lap_fit;                          // зовнішній радіус манжети: чаша над поясом звужується, найвужче — на краю
+sleeve_r  = in_r(cut_z) - lap_fit;                          // зовнішній радіус манжети: стінка над поясом звужується, найвужче — на краю
 bay_z     = cut_z - lap / 2 - bay.y / 2;                    // низ ламелі
 bay_a     = bay.x / sleeve_r * 180 / PI;                    // ламель по дузі, градуси
 bore      = col_bore - 2 * fit - 2 * guide_wall;            // отвір напрямної V1
@@ -157,13 +157,19 @@ wire_z    = [strip_z0 - wire_gap - wire_d / 2, strip_z1 + wire_gap + wire_d / 2]
 node_z0   = guide_z0;                     // вкладиш вузла дімера (V1 і V2) стоїть на поличках колони на цій висоті
 guide_top = pot1_face + 2;
 
-cav_r_top = in_r(cut_z) + wall - base_wall;
-function cav_r(z) = min(in_r(z) + wall - base_wall, cav_r_top - tan(draft) * (cut_z - z));  // порожнина основи з ухилом
+cav_r_top = off_r(cut_z, base_wall);
+function rib_r(z) = cav_r(z) - pad.x;  // внутрішня грань ребра: йде за ухилом, тож сердечник виймається
+function cav_r(z) = min(off_r(z, base_wall), cav_r_top - tan(draft) * (cut_z - z));  // порожнина основи з ухилом
 
 echo(str("Внутрішній радіус чаші: z=27 → ", in_r(27), ", z=", bat_top, " → ", in_r(bat_top)));
 echo(str("Вал у хвостовику: V1 ", pot1_face + pot1_shaft - boss[1], ", V2 ", pot2_face + pot2_shaft - boss[1]));
 
 for (z = [floor_z : 0.5 : cut_z - 0.5]) assert(cav_r(z + 0.5) >= cav_r(z) - 1e-6, "порожнина основи має піднутрення: сердечник не вийде");
+for (z = [floor_z : 0.5 : cut_z - 0.5]) assert(rib_r(z + 0.5) >= rib_r(z) - 1e-6, "ребро під вставку має піднутрення: сердечник не вийде");
+// нормальна товщина стінки (до зовнішнього контуру) вздовж порожнини; нижче z=20 стінку тримає суцільне дно
+function wall_n(z) = z < fil_c.y ? fil_r - norm([cav_r(z) - fil_c.x, z - fil_c.y])
+                   : z <= belt_z ? belt_r - cav_r(z) : (belt_r - k * (z - belt_z) - cav_r(z)) / sqrt(1 + k * k);
+for (z = [fil_c.y - fil_r + base_wall : 0.5 : cut_z]) assert(wall_n(z) >= base_wall - 0.2, "стінка основи тонша за base_wall");
 assert(pm_top + 3 <= floor_z, "бетон над кишенею IP5306 тонший за 3 мм");
 assert(bat_corner + 0.5 < pocket_r, "акумулятори впираються в чашу");
 assert(norm([-esp_x + esp.z / 2 + 3, esp.x / 2]) < pocket_r, "ESP32 з деталями впирається в чашу");
@@ -232,7 +238,7 @@ module arc_ring(r0, r1, z0, h, a0, a1) {
 
 module shade_top() {
   intersection() { rotate_extrude() shade_profile(top_wall); zslab(cut_z, 300); }
-  difference() {  // манжета: заходить у чашу на 6 мм, сходинка — торець плафона на краю чаші
+  difference() {  // манжета: заходить в основу на lap мм, сходинка — торець плафона на краю основи
     union() {
       translate([0, 0, cut_z - lap]) cylinder(r = sleeve_r, h = lap);
       translate([0, 0, cut_z]) cylinder(r = top_in + top_wall / 2, h = 1);  // зрощення зі стінкою
@@ -259,7 +265,11 @@ module puck_void() {
 module base_void() {
   rotate_extrude() polygon(concat([[0, floor_z]], [for (z = [floor_z : 1 : cut_z]) [cav_r(z), z]], [[cav_r(cut_z), cut_z + 1], [0, cut_z + 1]]));
   puck_void();
-  translate([chan_x, 0, puck_z[1]]) cylinder(d = chan_d, h = floor_z + 1 - puck_z[1], $fn = 48);  // канал крізь дно в порожнину
+}
+
+module rib(a) {  // ребро (пілястра) від дна до верху п'ятачка: ±8°, внутрішня грань за ухилом
+  rotate(a - 8) rotate_extrude(angle = 16)
+    polygon(concat([for (z = [floor_z : 1 : ring_z0]) [rib_r(z), z]], [for (z = [ring_z0 : -1 : floor_z]) [cav_r(z) + 1, z]]));
 }
 
 module insert_holes() {
@@ -271,9 +281,8 @@ module base() {
     union() {
       intersection() { rotate_extrude() shade_envelope(); zslab(0, cut_z); }
       translate([0, 0, puck_z[0]]) cylinder(d = puck_d, h = ring_z - puck_z[0] + 1);  // під кільцем-дном шейдера суцільний бетон
-      for (a = pad_a) arc_ring(cav_r(ring_z0) - pad.x, cav_r(ring_z0) + 1, ring_z0 - pad.y, pad.y, a - 8, a + 8);
     }
-    difference() { base_void(); for (a = pad_a) arc_ring(cav_r(ring_z0) - pad.x, cav_r(ring_z0) + 1, ring_z0 - pad.y, pad.y, a - 8, a + 8); }
+    difference() { base_void(); for (a = pad_a) rib(a); }
     insert_holes();
   }
 }
