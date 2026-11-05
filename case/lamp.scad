@@ -1,6 +1,6 @@
-// Нічна лампа на акумуляторах: шейдер — форма lamp-0.1.1 (Fusion), зменшена ×0.7; бетонна шайба, шасі з акумуляторами,
+// Нічна лампа на акумуляторах: шейдер — форма lamp-0.1.1 (Fusion), зменшена ×0.7; бетонна основа, шасі з акумуляторами,
 // восьмигранна колона зі стрічкою, дімер угорі.
-//   openscad -D 'part="bowl"' -o bowl.stl lamp.scad      (усі деталі — tools/build.sh)
+//   openscad -D 'part="base"' -o base.stl lamp.scad      (усі деталі — tools/build.sh)
 //   openscad -D 'part="assembly"' -D variant=2 -o a.png lamp.scad
 // Усі деталі — в осі лампи: стіл z=5, низ шейдера z=15 (лампа на 10 мм над столом, ~175 мм від столу до верху).
 // Шейдер = профіль lamp-export-1.step, масштаб 0.7 від дна шейдера (z=15); стінка лишається 2 мм.
@@ -9,7 +9,7 @@
 //
 // Вигляд згори: +X — USB-C у боці шайби, ±Y — акумулятори, −X — ESP32 (стоїть ребром).
 
-part    = "assembly";  // shade_top, bowl, puck, puck_core, chassis, reflector, column, knob_v1_carriage,
+part    = "assembly";  // shade_top, base, puck_core, chassis, reflector, column, knob_v1_carriage,
                        // knob_v1_guide, knob_v2_cap, dimmer, batteries, pcb, pot_v1, pot_v2, assembly, section
 variant = 2;           // вузол дімера для assembly/section: 1 — B100K з кнопкою, 2 — RK097NS з вимикачем
 
@@ -31,7 +31,7 @@ recess_r = 67.5 * S;          // заглиблення під дімер
 collar   = [40 * S, 42 * S, 17];  // комір під шайбу: r внутрішній, r зовнішній, z центру заокруглення R2
 
 /* [Байонет] */
-lap      = 6;     // напуск плафона в чашу
+lap      = 5;     // напуск плафона в основу
 lap_fit  = 0.2;
 lap_t    = 1.6;   // товщина манжети плафона
 bay      = [8, 2, 1.0];  // ламель: по дузі, по висоті, радіально
@@ -40,7 +40,13 @@ bay_turn = 30;    // поворот байонета
 bay_fit  = 0.2;
 bump_h   = 0.4;   // горбик-фіксатор у пазу
 
-/* [Шайба: бетон] */
+/* [Основа: бетонна відливка] */
+base_wall = 5;             // стінка бетонної основи
+draft     = 1;             // ухил внутрішньої порожнини, градуси: сердечник виймається вгору
+pad       = [7, 7];        // п'ятачок під кільце: радіально, по висоті
+pad_a     = [0, 90, 180, 270];
+insert    = [4.6, 5.7];    // латунна вставка: OD, довжина
+
 puck_fit = 0.25;           // зазор у комірі (у STEP шайба Ø80 у коміра Ø80 впритул)
 puck_d   = 2 * collar[0] - 2 * puck_fit;
 puck_z   = [5, collar.z];
@@ -124,7 +130,9 @@ chassis_z = collar.z + 2;                // шасі лежить на верх�
 deck_z    = chassis_z + chassis_t;       // верх диска шасі
 bat_top   = deck_z + layers * cell.z;
 refl_z    = bat_top;                     // відбивач лежить на акумуляторах
-cut_z     = refl_z + refl[1] + 1;         // розріз: відбивач на 1 мм нижче краю чаші
+cut_z     = 48.2;                         // верх основи / шов з плафоном (відбивач на 1 мм нижче)
+ring_z0   = cut_z - lap;                  // верх п'ятачків: на них лягає кільце
+floor_z   = chassis_z;                    // верх бетонного дна
 bat_y0    = col_flat + col_fit + cup_wall + bat_tol;  // акумулятори двома стосами по боках колони (±Y), впритул до стакана
 bat_corner = norm([cell.x / 2 + bat_tol, bat_y0 + cell.y + bat_tol]);
 pocket_r  = in_r(deck_z) - 0.3;
@@ -149,9 +157,14 @@ wire_z    = [strip_z0 - wire_gap - wire_d / 2, strip_z1 + wire_gap + wire_d / 2]
 node_z0   = guide_z0;                     // вкладиш вузла дімера (V1 і V2) стоїть на поличках колони на цій висоті
 guide_top = pot1_face + 2;
 
+cav_r_top = in_r(cut_z) + wall - base_wall;
+function cav_r(z) = min(in_r(z) + wall - base_wall, cav_r_top - tan(draft) * (cut_z - z));  // порожнина основи з ухилом
+
 echo(str("Внутрішній радіус чаші: z=27 → ", in_r(27), ", z=", bat_top, " → ", in_r(bat_top)));
 echo(str("Вал у хвостовику: V1 ", pot1_face + pot1_shaft - boss[1], ", V2 ", pot2_face + pot2_shaft - boss[1]));
 
+for (z = [floor_z : 0.5 : cut_z - 0.5]) assert(cav_r(z + 0.5) >= cav_r(z) - 1e-6, "порожнина основи має піднутрення: сердечник не вийде");
+assert(pm_top + 3 <= floor_z, "бетон над кишенею IP5306 тонший за 3 мм");
 assert(bat_corner + 0.5 < pocket_r, "акумулятори впираються в чашу");
 assert(norm([-esp_x + esp.z / 2 + 3, esp.x / 2]) < pocket_r, "ESP32 з деталями впирається в чашу");
 assert(sleeve_r - lap_t > bat_corner + 0.5, "манжета плафона зачіпає акумулятори");
@@ -217,18 +230,6 @@ module arc_ring(r0, r1, z0, h, a0, a1) {
   rotate(a0) translate([0, 0, z0]) rotate_extrude(angle = a1 - a0) translate([r0, 0]) square([r1 - r0, h]);
 }
 
-module bowl() {
-  difference() {
-    intersection() { shade(); zslab(0, cut_z); }
-    for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) {  // Г-паз: вниз від краю, потім 30° по колу
-      arc_ring(sleeve_r - 0.1, sleeve_r + bay.z + bay_fit, bay_z - bay_fit, cut_z - bay_z + bay_fit + 1, -0.5, bay_a + 0.5);
-      arc_ring(sleeve_r - 0.1, sleeve_r + bay.z + bay_fit, bay_z - bay_fit, bay.y + 2 * bay_fit, -0.5, bay_turn + bay_a + 0.5);
-    }
-  }
-  for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n)  // горбик: ламель перескакує його в кінці повороту
-    arc_ring(in_r(cut_z), sleeve_r + bay.z + bay_fit + 0.1, bay_z - bay_fit - 0.01, bump_h + 0.01, bay_turn - 1.2, bay_turn - 0.4);
-}
-
 module shade_top() {
   intersection() { rotate_extrude() shade_profile(top_wall); zslab(cut_z, 300); }
   difference() {  // манжета: заходить у чашу на 6 мм, сходинка — торець плафона на краю чаші
@@ -247,7 +248,7 @@ module shade_top() {
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) arc_ring(sleeve_r - 0.5, sleeve_r + bay.z, bay_z, bay.y, 0, bay_a);
 }
 
-// --- шайба ---
+// --- основа: бетонна відливка (стінка 5, порожнина з ухилом) ---
 module puck_void() {
   translate([chan_x - chan_d / 2, -ip5306.x / 2 - pm_fit, puck_z[0] - 1]) cube([pm_x1 + pm_fit - chan_x + chan_d / 2, ip5306.x + 2 * pm_fit, pm_top - puck_z[0] + 1]);
   // зенківка від торця гнізда назовні: корпус штекера заходить до торця, гніздо стоїть глибше за бік шайби
@@ -255,7 +256,27 @@ module puck_void() {
   translate([chan_x, 0, puck_z[0]]) cylinder(d = chan_d, h = puck_z[1] - puck_z[0] + 1, $fn = 48);
 }
 
-module puck() { difference() { translate([0, 0, puck_z[0]]) cylinder(d = puck_d, h = puck_z[1] - puck_z[0]); puck_void(); } }
+module base_void() {
+  rotate_extrude() polygon(concat([[0, floor_z]], [for (z = [floor_z : 1 : cut_z]) [cav_r(z), z]], [[cav_r(cut_z), cut_z + 1], [0, cut_z + 1]]));
+  puck_void();
+  translate([chan_x, 0, puck_z[1]]) cylinder(d = chan_d, h = floor_z + 1 - puck_z[1], $fn = 48);  // канал крізь дно в порожнину
+}
+
+module insert_holes() {
+  for (a = pad_a) rotate(a) translate([cav_r(ring_z0) - pad.x / 2, 0, ring_z0 - insert[1]]) cylinder(d = insert[0], h = insert[1] + 1, $fn = 48);
+}
+
+module base() {
+  difference() {
+    union() {
+      intersection() { rotate_extrude() shade_envelope(); zslab(0, cut_z); }
+      translate([0, 0, puck_z[0]]) cylinder(d = puck_d, h = ring_z - puck_z[0] + 1);  // під кільцем-дном шейдера суцільний бетон
+      for (a = pad_a) arc_ring(cav_r(ring_z0) - pad.x, cav_r(ring_z0) + 1, ring_z0 - pad.y, pad.y, a - 8, a + 8);
+    }
+    difference() { base_void(); for (a = pad_a) arc_ring(cav_r(ring_z0) - pad.x, cav_r(ring_z0) + 1, ring_z0 - pad.y, pad.y, a - 8, a + 8); }
+    insert_holes();
+  }
+}
 
 module puck_core() {  // вкладиш у форму: те, що в шайбі порожнє (плата клеїться спиною до стелі кишені)
   intersection() { puck_void(); translate([0, 0, puck_z[0]]) cylinder(d = puck_d + 2, h = puck_z[1] - puck_z[0]); }
@@ -381,8 +402,7 @@ module pot_v2() {
 module scene(cut) {
   module c(col, a = 1) { color(col, a) if (cut) intersection() { children(); translate([-200, 0, 0]) cube([400, 200, 300]); } else children(); }
   c("#e9e4da", cut ? 1 : 0.35) shade_top();
-  c("#8c7f6e", cut ? 1 : 0.6) bowl();
-  c("#9b9b96") puck();
+  c("#9b9b96", cut ? 1 : 0.6) base();
   c("#d9d4cc") chassis();
   c("#ffffff") reflector();
   c("#f4f2ee") column();
@@ -394,8 +414,7 @@ module scene(cut) {
 }
 
 if      (part == "shade_top")        shade_top();
-else if (part == "bowl")             bowl();
-else if (part == "puck")             puck();
+else if (part == "base")             base();
 else if (part == "puck_core")        puck_core();
 else if (part == "chassis")          chassis();
 else if (part == "reflector")        reflector();
