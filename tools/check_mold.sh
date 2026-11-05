@@ -6,10 +6,16 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 L="$PWD/case/lamp.scad"
-chk() {  # ім'я  вираз  максимум
+N=0; PIDS=()
+chk() {  # ім'я  вираз  максимум; порожній результат CGAL ("object is empty") = 0, будь-яка інша помилка openscad — збій
+  N=$((N + 1))
   printf 'include <%s>\n%s\n' "$L" "$2" > "$T/$1.scad"
-  ( if ! openscad --export-format binstl -o "$T/$1.stl" -D 'part="none"' "$T/$1.scad" >/dev/null 2>"$T/$1.err" && ! grep -q "object is empty" "$T/$1.err"; then echo "FAIL $1: помилка openscad"; exit 0; fi
+  ( set -e
+    if ! openscad --export-format binstl -o "$T/$1.stl" -D 'part="none"' "$T/$1.scad" >/dev/null 2>"$T/$1.err"; then
+      grep -q "Current top level object is empty" "$T/$1.err" || { echo "FAIL $1: помилка openscad"; exit 1; }
+    fi
     python3 -I tools/stl_volume.py "$T/$1.stl" "$1" "$3" ) > "$T/$1.out" &
+  PIDS+=($!)
 }
 for m in 'mold_outer(1)' 'mold_outer(-1)' 'mold_core()' 'puck_core()' 'usb_core()'; do chk "base_x_$m" "intersection(){ base(); $m; }" 1.5; done
 chk o_ab    'intersection(){ mold_outer(1); mold_outer(-1); }' 1.5
@@ -23,6 +29,16 @@ chk gap 'difference(){ rotate_extrude() base_outer_2d(cut_z); base(); mold_core(
 for d in '1,0,0' '-1,0,0' '0,1,0' '0,-1,0' '0,0,1' '0,0,-1'; do chk "void_$d" "intersection(){ translate([$d]) difference(){ mold_core(true); mold_core(false, false); } base(); }" 0.5; done
 chk pull_down 'intersection(){ base(); union(){ for (i = [1 : 25]) translate([0, 0, -i]) puck_core(); } }' 1.5
 chk pull_x    'intersection(){ base(); union(){ for (i = [1 : 12]) translate([i, 0, 0]) usb_core(); } }' 1.5
-wait
+# сердечник піднімається без зачепів за бетон (усі кроки, з бортиком, штирями, пазами)
+for h in 0.5 1 2 5 10 30; do chk "lift_$h" "intersection(){ base(); translate([0, 0, $h]) mold_core(); }" 1.5; done
+# вставка бортика (реальний OD) цілком у половині A: B її не торкається, поза A лишається тільки отвір під вплавлення
+for sx in -1 1; do
+  ins="translate([$sx * mold_tab_x, mold_tab_y, cut_z - insert[1]]) cylinder(d = insert[0], h = insert[1], \$fn = 48)"
+  chk "tab_in_B_$sx" "intersection(){ $ins; mold_outer(-1); }" 0.05
+  chk "tab_out_A_$sx" "difference(){ $ins; mold_outer(1); translate([$sx * mold_tab_x, mold_tab_y, cut_z - 9]) cylinder(d = insert[0] - 0.4, h = 10, \$fn = 48); }" 0.5
+done
+FAILED=0; for p in "${PIDS[@]}"; do wait "$p" || FAILED=1; done
 cat "$T"/*.out | sort
-! grep -q FAIL "$T"/*.out
+OK=$(cat "$T"/*.out | grep -c '^ok' || true)
+echo "перевірок: $N, ok: $OK"
+[ "$FAILED" = 0 ] && [ "$OK" = "$N" ]

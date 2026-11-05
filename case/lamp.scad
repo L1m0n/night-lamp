@@ -391,7 +391,7 @@ module base_void() {
 
 module rib(a, g = 0) {  // ребро (пілястра) від дна до верху п'ятачка: ±pad_half, внутрішня грань за ухилом; g > 0 — роздуте на g (стінка сердечника навколо паза)
   rotate(a - pad_half - g * 180 / PI / rib_r(floor_z)) rotate_extrude(angle = 2 * (pad_half + g * 180 / PI / rib_r(floor_z)))
-    polygon(concat([for (z = [floor_z : 1 : rib_top - 0.01]) [rib_r(z) - g, z]], [[rib_r(rib_top) - g, rib_top]], g > 0 ? [[rib_r(rib_top) - g, rib_top + g], [cav_r(rib_top) + 1, rib_top + g]] : [], [[cav_r(rib_top) + 1, rib_top]], [for (z = [rib_top - 1 : -1 : floor_z]) [cav_r(z) + 1, z]]));
+    polygon(concat([for (z = [floor_z : 1 : rib_top - 0.01]) [rib_r(z) - g, z]], [[rib_r(rib_top) - g, rib_top]], g > 0 ? [[rib_r(rib_top) - g, rib_top + g], [cav_r(rib_top) + 1, rib_top + g]] : [], [[cav_r(rib_top) + 1, rib_top]], [for (z = [floor_z + floor(rib_top - 0.01 - floor_z) : -1 : floor_z]) [cav_r(z) + 1, z]]));  // зовнішня межа — у тих самих z, що й порожнина (від floor_z): інакше біля підлоги лишається клин порожнини між ребром і стінкою
 }
 
 module insert_holes() {
@@ -429,6 +429,8 @@ module puck_core() {  // вкладиш: кишеня IP5306 + канал (пл�
 // Заливка: бетон до рівня краю, повільно опустити сердечник (канал puck_core входить у його гніздо), прикрутити бортик M3 до фланців форми, вібрувати.
 // Розпалубка: відкрутити сердечник і підняти його вгору (штирі виходять з вставок); відкрутити болти й розвести половини вздовж ±Y;
 // виштовхнути puck_core вниз крізь низ основи; витягти usb_core вбік +X.
+// Після розпалубки: збити стовпчики від випусків — рівно з поверхнею на дні порожнини (там сідає шасі) і на верхах ребер (там сідають вушка кільця).
+// Друк: зовнішні половини зовнішньою гранню вниз, плавником вгору (установчі штирі виступають із площини рознім).
 // Випуски: Ø4 у бортику (над стінкою), Ø2.8 крізь дно сердечника і стелі пазів — у бетоні лишаться стовпчики, їх збити (на дні — рівно з поверхнею, там сідає шасі).
 // --- форма для відливки: відкритий верх = край чаші (там заливка і сердечник), низ основи (z=5) на дні форми ---
 module base_outer_2d(top) {  // профіль зовнішньої поверхні основи (x ≥ 0), з ніжкою
@@ -443,6 +445,8 @@ module mold_2d(w) { intersection() { offset(delta = w) base_outer_2d(cut_z); tra
 mold_tab_x = off_r(cut_z, 0) + mold_t + mold_flange / 2;      // болт бортика сердечника у верх фланця форми
 mold_low_x = puck_d / 2 + mold_t + mold_flange - 3.5;         // нижня пара болтів у фланці ніжки, якнайдалі від стінки
 mold_pin_z = 13;
+mold_boss  = [7, 7, 12];   // бобишка під вставку бортика цілком у половині A (y ≥ 0): x (навколо вставки), y від площини рознім, висота вниз від краю
+mold_tab_y = insert[0] / 2 + 1.2;   // вісь вставки: ≥ 1.2 мм стінки до площини рознім
 
 module mold_outer(side) {   // side ±1: половина по y ≥ 0 / y ≤ 0, рознім площиною XZ
   difference() {
@@ -453,6 +457,7 @@ module mold_outer(side) {   // side ±1: половина по y ≥ 0 / y ≤ 0
       }
       // фланець на стику: пластина по контуру на mold_flange далі за стінку
       rotate([90, 0, 0]) translate([0, 0, side > 0 ? -mold_fin_t : 0]) linear_extrude(mold_fin_t) union() { mold_2d(mold_t + mold_flange); mirror([1, 0]) mold_2d(mold_t + mold_flange); }
+      if (side > 0) for (sx = [-1, 1]) translate([sx * mold_tab_x - mold_boss.x / 2, 0, cut_z - mold_boss.z]) cube(mold_boss);   // бобишка під вставку M3 (бортик сердечника)
       for (sx = [-1, 1]) if (sx == side) translate([sx * mold_low_x, 0.01 * side, mold_pin_z]) rotate([90 * side, 0, 0]) cylinder(d = 3, h = mold_pin_h + 0.01, $fn = 32);   // установчий штир (в іншу половину)
     }
     rotate_extrude() base_outer_2d(cut_z + 1);                              // порожнина = зовнішня поверхня основи, зверху відкрита
@@ -460,7 +465,7 @@ module mold_outer(side) {   // side ±1: половина по y ≥ 0 / y ≤ 0
     for (sx = [-1, 1], z = [24, 36]) translate([sx * (off_r(z, 0) + mold_t + mold_flange / 2), 0, z]) rotate([90, 0, 0]) cylinder(d = mold_bolt_d, h = 2 * mold_fin_t + 2, center = true, $fn = 48);
     for (sx = [-1, 1]) translate([sx * mold_low_x, 0, 8]) rotate([90, 0, 0]) cylinder(d = mold_bolt_d, h = 2 * mold_fin_t + 2, center = true, $fn = 48);   // низ: стягує дно/ніжку
     for (sx = [-1, 1]) if (sx != side) translate([sx * mold_low_x, -0.01 * side, mold_pin_z]) rotate([-90 * side, 0, 0]) cylinder(d = 3 + 0.4, h = mold_pin_h + 0.5, $fn = 32);   // гніздо під штир іншої половини
-    for (sx = [-1, 1]) translate([sx * mold_tab_x, 0, cut_z - 8]) cylinder(d = 4, h = 9, $fn = 48);   // під латунну вставку M3: бортик сердечника
+    if (side > 0) for (sx = [-1, 1]) translate([sx * mold_tab_x, mold_tab_y, cut_z - 9]) cylinder(d = insert[0] - 0.4, h = 10, $fn = 48);   // отвір під латунну вставку M3 (вплавлення) — лише в половині A
   }
 }
 
@@ -482,14 +487,14 @@ module mold_core(solid = false, vents = true) {   // порожнина осно
       translate([0, 0, cut_z]) difference() {   // бортик + спідниця навколо краю форми (в проріз фланців стику не лізе)
         union() {
           cylinder(r = rim + mold_skirt, h = mold_cf);
-          translate([0, 0, -5]) difference() { cylinder(r = rim + mold_skirt, h = 5); translate([0, 0, -1]) cylinder(r = rim, h = 7); translate([-100, -mold_fin_t - 0.4, -1]) cube([200, 2 * mold_fin_t + 0.8, 7]); }
+          translate([0, 0, -5]) difference() { cylinder(r = rim + mold_skirt, h = 5); translate([0, 0, -1]) cylinder(r = rim, h = 7); translate([-100, -mold_fin_t - 0.4, -1]) cube([200, mold_fin_t + mold_boss.y + 0.8, 7]); }
         }
         translate([0, 0, -1]) cylinder(r = cav_r_top - mold_cw, h = mold_cf + 2);
         for (i = [0 : 11]) rotate(15 + i * 30) translate([(cav_r_top + mold_ro) / 2, 0, -1]) cylinder(d = mold_vent_d, h = mold_cf + 2, $fn = 24);
       }
       for (sx = [-1, 1]) difference() {   // вушка бортика: M3 в латунну вставку у фланці форми
-        hull() { translate([sx * mold_tab_x, 0, cut_z]) cylinder(r = 5, h = mold_cf, $fn = 48); translate([sx * (rim - 2), -5, cut_z]) cube([0.1, 10, mold_cf]); }
-        translate([sx * mold_tab_x, 0, cut_z - 1]) cylinder(d = 3.4, h = mold_cf + 2, $fn = 48);
+        hull() { translate([sx * mold_tab_x, mold_tab_y, cut_z]) cylinder(r = 5, h = mold_cf, $fn = 48); translate([sx * (rim - 2), mold_tab_y - 5, cut_z]) cube([0.1, 10, mold_cf]); }
+        translate([sx * mold_tab_x, mold_tab_y, cut_z - 1]) cylinder(d = 3.4, h = mold_cf + 2, $fn = 48);
       }
     }
     if (vents && !solid) {
@@ -659,6 +664,8 @@ assert(mold_t >= 2.4, "стінка форми тонка: прогнеться 
 assert(max(base_h, 2 * (belt_r + mold_t + mold_flange)) <= 180 && 2 * (mold_tab_x + 5) <= 180, "частина форми не влазить на стіл A1 mini");
 assert(2 * (off_r(cut_z - 5, 0) + mold_t * sqrt(1 + k * k) + mold_fit + mold_skirt) <= 180 && cut_z + mold_cf - (rib_top - insert[1]) <= 180, "сердечник не влазить на стіл A1 mini");
 assert(mold_fin_t - 4 / 2 >= 2 && mold_low_x - mold_bolt_d / 2 - (puck_d / 2 + mold_t) >= 2 && mold_tab_x - 2 > mold_ro + mold_t, "вставка/болт надто близько до краю плавника");
+assert(mold_tab_y - insert[0] / 2 >= 1.2 && mold_boss.y - mold_tab_y - insert[0] / 2 >= 1.2 && mold_boss.x / 2 - insert[0] / 2 >= 1.2 && mold_boss.z - 9 >= 1.2, "стінка бобишки навколо вставки бортика < 1.2 мм");
+assert(mold_tab_x - mold_boss.x / 2 >= mold_ro + mold_t - 0.5 && mold_tab_x + mold_boss.x / 2 <= mold_ro + mold_t + mold_flange, "бобишка вставки виходить за плавник");
 assert(mold_flange / 2 - mold_bolt_d / 2 >= 2, "болт M3 надто близько до краю фланця форми");
 // puck_core: зенківка доходить до стінки форми й гнізда в ній, канал — до сердечника на floor_z
 assert(pc_reach > puck_d / 2 && pc_reach <= puck_d / 2 + mold_t - 1.2, "зенківка usb_core не заходить у стінку форми або гніздо лишає стінку < 1.2");
