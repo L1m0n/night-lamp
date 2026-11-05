@@ -32,7 +32,7 @@
 
   <p class="eyebrow">Нічна лампа · збірка в масштабі</p>
   <h1>Рендер</h1>
-  <p class="lede">Ціла лампа на тумбочці: бетонна шайба, пастельна чаша й напівпрозорий плафон, що світиться від колони зі стрічкою. Розберіть її повзунком, щоб побачити, як деталі сідають одна в одну.</p>
+  <p class="lede">Ціла лампа на тумбочці: бетонна основа й напівпрозорий плафон, що світиться від колони зі стрічкою. Розберіть її повзунком, щоб побачити, як деталі сідають одна в одну.</p>
 
   <div class="bar">
     <div class="toggle" role="radiogroup" aria-label="Світло">
@@ -43,7 +43,7 @@
       <label><input type="radio" name="variant" value="V1" checked><span>V1</span></label>
       <label><input type="radio" name="variant" value="V2"><span>V2</span></label>
     </div>
-    <label class="range">Колір чаші й дімера <input type="color" id="bowlColor" value="#a8b88e"></label>
+    <label class="range">Колір дімера <input type="color" id="bowlColor" value="#a8b88e"></label>
     <label class="range">Розібрати <input type="range" id="explode" min="0" max="1" step="0.01" value="0"></label>
   </div>
 
@@ -60,13 +60,13 @@
 (function () {
   var host = document.getElementById('stage');
   if (!Lamp3D.ready()) {
-    Lamp3D.fallback(host, 'Тут мав бути тривимірний рендер лампи, але цей браузер не підтримує WebGL (або бібліотеки не завантажились). Лампа: бетонна шайба Ø80, пастельна чаша Ø112, напівпрозорий плафон і дімер зверху, висота ≈ 175 мм.');
+    Lamp3D.fallback(host, 'Тут мав бути тривимірний рендер лампи, але цей браузер не підтримує WebGL (або бібліотеки не завантажились). Лампа: бетонна основа Ø112, напівпрозорий плафон і дімер зверху, висота ≈ 175 мм.');
     return;
   }
 
-  // Рознесення по z при «Розібрати» = 1, мм. Шайба лишається на тумбочці, решта підіймається.
+  // Рознесення по z при «Розібрати» = 1, мм. Основа лишається на тумбочці, решта підіймається.
   var LIFT = {
-    puck: 0, pcb: 25, bowl: 45, chassis: 75, batteries: 75, reflector: 100,
+    base: 0, pcb: 25, bay_ring: 45, chassis: 75, batteries: 75, reflector: 100,
     column: 125, knob_v1_guide: 125, knob_v1_carriage: 125, knob_v2_cap: 125, pot_v1: 125, pot_v2: 125,
     shade_top: 200, dimmer: 260
   };
@@ -168,14 +168,14 @@
     r.checked = r.value === v0;
     r.addEventListener('change', function () { try { localStorage.setItem(VKEY, r.value.toLowerCase()); } catch (e) {} setVariant(r.value); v.dirty = true; });
   });
-  // Колір чаші й кришки дімера — лише для цього перегляду, памʼятається в браузері
+  // Колір дімера — лише для цього перегляду, памʼятається в браузері
   var bowlIn = document.getElementById('bowlColor'), CKEY = 'lamp-bowl-color';
   try { var sc = localStorage.getItem(CKEY); if (/^#[0-9a-f]{6}$/i.test(sc)) bowlIn.value = sc; } catch (e) {}
   function setBowl() {
     // Матовий PLA: чорний пластик не буває 0 (відбиває кілька %), а що темніший — то матовіший, без глянцевого відблиску
     var c = new THREE.Color(bowlIn.value), hsl = c.getHSL({});
     if (hsl.l < 0.025) c.setHSL(hsl.h, hsl.s, 0.025);
-    ['bowl', 'dimmer'].forEach(function (n) {
+    ['dimmer'].forEach(function (n) {
       var m = meshes[n][0].material; m.color.copy(c); m.roughness = 0.62 + 0.3 * (1 - Math.min(1, hsl.l / 0.5));
     });
     v.dirty = true;
