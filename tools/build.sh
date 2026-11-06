@@ -14,8 +14,11 @@ for p in mold_outer_a mold_outer_b mold_core usb_core; do
   echo "== $p"
   openscad --hardwarnings --export-format binstl -o "case/stl/mold/$p.stl" -D "part=\"$p\"" case/lamp.scad
 done
+# пробна чаша з пластику (отвори під вплавлення вставок) — окремо, не частина лампи
+mkdir -p case/stl/test
+openscad --hardwarnings --export-format binstl -o case/stl/test/base_plastic.stl -D 'part="base_plastic"' case/lamp.scad
 # друковані деталі — кожна одним тілом (макети покупних деталей не перевіряємо)
-python3 -I tools/stl_bodies.py case/stl/{shade_top,base,bay_ring,puck_core,chassis,reflector,column,knob_v1_carriage,knob_v1_guide,knob_v2_cap,dimmer}.stl case/stl/mold/*.stl
+python3 -I tools/stl_bodies.py case/stl/{shade_top,base,bay_ring,puck_core,chassis,reflector,column,knob_v1_carriage,knob_v1_guide,knob_v2_cap,dimmer}.stl case/stl/mold/*.stl case/stl/test/*.stl
 bash tools/check_mold.sh
 python3 -I tools/overhangs.py case/stl/shade_top.stl 30
 python3 -I tools/stl2js.py case/stl assets/models.js

@@ -72,6 +72,7 @@ pad_a     = [0, 90, 180, 270];
 pad_half  = 8;             // ребро: півширина по дузі, градуси
 notch_a   = pad_half + 1;  // виїмка шасі під ребро: півширина, градуси
 insert    = [4.6, 5.7];    // латунна вставка: OD, довжина
+insert_heat_d = 4.0;      // отвір під вплавлення тієї ж вставки паяльником (пробна пластикова чаша)
 screw_len = 6;             // гвинт кільця M3×L з потайною головкою
 ring_fit  = 0.3;           // зазор кільця й вушок до бетону (радіально) — налаштувати після пробного друку, за потреби підшліфувати зовнішню грань кільця
 esp_slot_pad = 0.6;          // відбивач: запас навколо ESP32 у проріз (0.3 зазор + 0.3 люфт шасі/колони)
@@ -405,18 +406,18 @@ module rib(a, g = 0) {  // ребро (пілястра) від дна до ве
     polygon(concat([for (z = [floor_z : 1 : rib_top - 0.01]) [rib_r(z) - g, z]], [[rib_r(rib_top) - g, rib_top]], g > 0 ? [[rib_r(rib_top) - g, rib_top + g], [cav_r(rib_top) + 1, rib_top + g]] : [], [[cav_r(rib_top) + 1, rib_top]], [for (z = [floor_z + floor(rib_top - 0.01 - floor_z) : -1 : floor_z]) [cav_r(z) + 1, z]]));  // зовнішня межа — у тих самих z, що й порожнина (від floor_z): інакше біля підлоги лишається клин порожнини між ребром і стінкою
 }
 
-module insert_holes() {
-  for (a = pad_a) rotate(a) translate([hole_r, 0, rib_top - insert[1]]) cylinder(d = insert[0], h = insert[1] + 1, $fn = 48);
+module insert_holes(d = insert[0], extra = 0) {  // extra — запас глибини під пластик, витіснений при вплавленні
+  for (a = pad_a) rotate(a) translate([hole_r, 0, rib_top - insert[1] - extra]) cylinder(d = d, h = insert[1] + extra + 1, $fn = 48);
 }
 
-module base() {
+module base(plastic = false) {  // plastic — пробна пластикова чаша: отвори під вплавлення вставок замість заливки в бетон
   difference() {
     union() {
       intersection() { rotate_extrude() shade_envelope(); zslab(0, cut_z); }
       translate([0, 0, puck_z[0]]) cylinder(d = puck_d, h = ring_z - puck_z[0] + 1);  // під кільцем-дном шейдера суцільний бетон
     }
     difference() { base_void(); for (a = pad_a) rib(a); }
-    insert_holes();
+    if (plastic) insert_holes(insert_heat_d, 1); else insert_holes();
   }
 }
 
@@ -688,6 +689,7 @@ assert(mold_pin_d < insert[0] - 0.5, "штир занадто товстий д�
 
 if      (part == "shade_top")        shade_top();
 else if (part == "base")             base();
+else if (part == "base_plastic")     base(true);
 else if (part == "bay_ring")         bay_ring();
 else if (part == "puck_core")        puck_core();
 else if (part == "usb_core")         usb_core();
