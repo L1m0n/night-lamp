@@ -254,7 +254,7 @@ assert(norm([pm_x1 + pm_fit, ip5306.x / 2 + pm_fit]) < puck_d / 2 - 1, "кише
 assert(win_x0 <= sock_front && win_x0 >= sock_front - 0.5, "дно зенківки USB-C має бути в межах 0.5 мм від торця гнізда");
 assert(pm_x1 <= sock_front, "плата IP5306 заходить у шлях штекера");
 assert(usb_hole.x >= plug.x + 0.3 && usb_hole.y >= plug.y + 0.3, "корпус штекера не проходить у зенківку");
-assert(usb_z - usb_hole.y / 2 > puck_z[0] + 1, "зенківка USB-C прориває низ ніжки");
+assert(usb_z - usb_hole.y / 2 < puck_z[0] + 3, "під зенківкою USB-C лишилась би бетонна смужка < 3 мм — зенківка має бути відкрита донизу");
 assert(usb_sock.y < usb_hole.x && usb_sock.z < usb_hole.y, "гніздо більше за зенківку");
 top_in = in_r(cut_z + 1) + wall - top_wall;  // внутрішній радіус плафона над швом (наближено, конус майже вертикальний)
 assert(top_wall / 2 < top_wall - 0.5, "стінка плафона < 1 мм: кільце зрощення з манжетою не заходить у неї");
@@ -336,13 +336,13 @@ module shade_top() {
   // ламелі: верх і низ спадають уздовж дуги, як стеля паза (гвинтова поверхня того ж кроку)
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) {
     ramp_arc(sleeve_r - 0.5, sleeve_r + bay.z, 0, bay_foot, bay_top - bay.y, bay.y, 3);   // п'ятка: повна висота
-    ramp_arc(sleeve_r - 0.5, sleeve_r + bay.z, bay_foot, bay_a, bay_top - bay.y - bay_m * bay_foot + bump_h + bump_clr, bay.y - bump_h - bump_clr, 3);   // решта: низ піднято на висоту горбика й зазор над його вершиною
+    ramp_arc(sleeve_r - 0.5, sleeve_r + bay.z, bay_foot - 0.3, bay_a, bay_top - bay.y - bay_m * bay_foot + bump_h + bump_clr, bay.y - bump_h - bump_clr, 3);   // решта: низ піднято на висоту горбика й зазор над його вершиною
   }
 }
 
 // дуга a0…a1 висотою h, низ якої спадає на bay_m мм на градус від z0 (кроками step°; hull двох тонких зрізів на крок)
 module ramp_arc(r0, r1, a0, a1, z0, h, step = 2) {
-  for (a = [a0 : step : a1 - 0.001]) let(b = min(a + step, a1)) hull() {
+  for (a = [a0 : step : a1 - 0.001]) let(b = min(a + step + 0.3, a1)) hull() {  // +0.3°: сусідні сегменти перекриваються, а не торкаються гранями
     arc_ring(r0, r1, z0 - bay_m * (a - a0), h, a, a + 0.01);
     arc_ring(r0, r1, z0 - bay_m * (b - a0), h, b - 0.01, b);
   }
@@ -356,11 +356,9 @@ module bay_groove() {  // у координатах кільця; ламель �
 
 module bay_bump() {  // горбик на дні перед кінцем повороту: ламель перескакує його з клацом
   // гострий горбик з похилими боками, лише на останніх градусах перед замком: його перетинає тільки «п'ятка» ламелі
-  hb = bump_h;
-  for (seg = [[bump_b0, bump_b0 + bump_fl, 0, hb], [bump_b0 + bump_fl, bump_b1, hb, 0]]) hull() {
-    arc_ring(ring_r[0] - 0.01, bay_r1, bay_c0 - bay_hg - bay_m * seg[0] - 0.01, seg[2] + 0.01, seg[0], seg[0] + 0.01);
-    arc_ring(ring_r[0] - 0.01, bay_r1, bay_c0 - bay_hg - bay_m * seg[1] - 0.01, seg[3] + 0.01, seg[1] - 0.01, seg[1]);
-  }
+  // один hull трьох тонких зрізів (початок, вершина, кінець): трикутник над похилим дном опуклий, тож це рівно горбик, без швів між схилами
+  hull() for (q = [[bump_b0, 0], [bump_b0 + bump_fl, bump_h], [bump_b1, 0]])
+    arc_ring(ring_r[0] - 0.01, bay_r1, bay_c0 - bay_hg - bay_m * q[0] - 0.01, q[1] + 0.01, q[0] - 0.005, q[0] + 0.005);
 }
 
 module bay_tab() {  // на 0°: вушко під кільцем від грані ребра до стінки; зверху врівень з низом кільця, але над манжетою — виїмка
@@ -373,7 +371,7 @@ module bay_tab() {  // на 0°: вушко під кільцем від гра�
   }
 }
 
-module bay_ring() {
+module bay_ring() {  // друк: перевернутим (верхній торець на стіл) — у робочому положенні низ кільця висить над столом через вушка
   difference() {
     rotate_extrude() translate([ring_r[0], ring_z0]) square([ring_r[1] - ring_r[0], lap]);
     for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) difference() { bay_groove(); bay_bump(); }
@@ -382,10 +380,17 @@ module bay_ring() {
 }
 
 // --- основа: бетонна відливка (стінка 5, порожнина з ухилом) ---
+// зенківка USB-C: бічні стінки радіальні, щоб на виході в круглий бік ніжки бетон мав прямий кут, а не клин ~13°
+module usb_wedge(x1, z0, z1, g = 0) {
+  k = (usb_hole.x / 2 + g) / win_x0;
+  translate([0, 0, z0]) linear_extrude(z1 - z0) polygon([[win_x0, -k * win_x0], [x1, -k * x1], [x1, k * x1], [win_x0, k * win_x0]]);
+}
+
 module puck_void() {
   translate([chan_x - chan_d / 2, -ip5306.x / 2 - pm_fit, puck_z[0] - 1]) cube([pm_x1 + pm_fit - chan_x + chan_d / 2, ip5306.x + 2 * pm_fit, pm_top - puck_z[0] + 1]);
   // зенківка від торця гнізда назовні: корпус штекера заходить до торця, гніздо стоїть глибше за бік ніжки
-  translate([win_x0, -usb_hole.x / 2, usb_z - usb_hole.y / 2]) cube([puck_d / 2 + 1 - win_x0, usb_hole.x, usb_hole.y]);
+  // відкрита донизу: бетонна смужка під нею (1.5 мм) відколювалась би
+  usb_wedge(puck_d / 2 + 1, puck_z[0] - 1, usb_z + usb_hole.y / 2);
   translate([chan_x, 0, puck_z[0]]) cylinder(d = chan_d, h = puck_z[1] - puck_z[0] + 1, $fn = 48);
 }
 
@@ -416,7 +421,7 @@ module base() {
 }
 
 module usb_core() {   // зенківка USB-C: стоїть у гнізді стінки форми; виймається вбік +X, коли puck_core уже вийнятий
-  translate([win_x0, -usb_hole.x / 2, usb_z - usb_hole.y / 2]) cube([pc_reach - win_x0, usb_hole.x, usb_hole.y]);
+  usb_wedge(pc_reach, puck_z[0], usb_z + usb_hole.y / 2);
 }
 
 module puck_core() {  // вкладиш: кишеня IP5306 + канал (плата клеїться спиною до стелі кишені); виймається вниз крізь низ основи
@@ -466,7 +471,7 @@ module mold_outer(side) {   // side ±1: половина по y ≥ 0 / y ≤ 0
       for (sx = [-1, 1]) if (sx == side) translate([sx * mold_low_x, 0.01 * side, mold_pin_z]) rotate([90 * side, 0, 0]) cylinder(d = 3, h = mold_pin_h + 0.01, $fn = 32);   // установчий штир (в іншу половину)
     }
     rotate_extrude() base_outer_2d(cut_z + 1);                              // порожнина = зовнішня поверхня основи, зверху відкрита
-    translate([pc_reach - 2, -(usb_hole.x + 2 * mold_fit) / 2, usb_z - (usb_hole.y + 2 * mold_fit) / 2]) cube([2, usb_hole.x + 2 * mold_fit, usb_hole.y + 2 * mold_fit]);  // гніздо під кінчик usb_core
+    intersection() { usb_wedge(pc_reach, puck_z[0] - 0.01, usb_z + usb_hole.y / 2 + mold_fit, mold_fit); translate([pc_reach - 2, -50, 0]) cube([2, 100, 100]); }  // гніздо під кінчик usb_core (зенківка відкрита донизу — гніздо від підлоги форми)
     for (sx = [-1, 1], z = [24, 36]) translate([sx * (off_r(z, 0) + mold_t + mold_flange / 2), 0, z]) rotate([90, 0, 0]) cylinder(d = mold_bolt_d, h = 2 * mold_fin_t + 2, center = true, $fn = 48);
     for (sx = [-1, 1]) translate([sx * mold_low_x, 0, 8]) rotate([90, 0, 0]) cylinder(d = mold_bolt_d, h = 2 * mold_fin_t + 2, center = true, $fn = 48);   // низ: стягує дно/ніжку
     for (sx = [-1, 1]) if (sx != side) translate([sx * mold_low_x, -0.01 * side, mold_pin_z]) rotate([-90 * side, 0, 0]) cylinder(d = 3 + 0.4, h = mold_pin_h + 0.5, $fn = 32);   // гніздо під штир іншої половини
@@ -541,7 +546,7 @@ module chassis() {
   difference() {
     union() {
       translate([0, 0, chassis_z]) cylinder(d = chassis_d, h = chassis_t);
-      translate([0, 0, deck_z]) linear_extrude(pocket_wall[1]) intersection() {  // рамки під два стоси, обрізані по колу порожнини основи
+      translate([0, 0, deck_z]) linear_extrude(pocket_wall[1]) offset(r = 0.45) offset(delta = -0.45) intersection() {  // рамки під два стоси, обрізані по колу порожнини основи; без смужок < 0.9 мм
         for (sd = [-1, 1]) translate([0, sd * (bat_y0 - bat_tol + box.y / 2)]) difference() {
           square(box + 2 * [1, 1] * pocket_wall[0], center = true); square(box, center = true);
         }
