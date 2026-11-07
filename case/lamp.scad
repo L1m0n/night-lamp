@@ -321,18 +321,14 @@ module arc_ring(r0, r1, z0, h, a0, a1) {
 
 module shade_top() {
   intersection() { rotate_extrude() shade_profile(top_wall); zslab(cut_z, 300); }
-  difference() {  // манжета: заходить в основу на lap мм, сходинка — торець плафона на краю основи
+  // манжета: заходить в основу на lap мм; над нею пласка полиця до стінки — тієї ж товщини, що й стінка
+  // (при друці догори дриґом полиця висить ~8 мм усередину: під неї потрібна підтримка)
+  difference() {
     union() {
-      translate([0, 0, cut_z - lap]) cylinder(r = sleeve_r, h = lap);
-      translate([0, 0, cut_z]) cylinder(r = top_in + top_wall / 2, h = 1);  // зрощення зі стінкою
+      translate([0, 0, cut_z - lap]) cylinder(r = sleeve_r, h = lap + 0.01);
+      translate([0, 0, cut_z]) cylinder(r = top_in + top_wall / 2, h = top_wall);
     }
-    translate([0, 0, cut_z - lap - 1]) cylinder(r = sleeve_r - lap_t, h = lap + 3);
-  }
-  // скіс 45° над уступом манжети: плафон друкується догори дриґом, і без скосу уступ висить без опори
-  chamf = top_in - (sleeve_r - lap_t);
-  translate([0, 0, cut_z + 1]) difference() {
-    cylinder(r = top_in + top_wall / 2, h = chamf);
-    translate([0, 0, -0.01]) cylinder(r1 = sleeve_r - lap_t, r2 = top_in, h = chamf + 0.02);
+    translate([0, 0, cut_z - lap - 1]) cylinder(r = sleeve_r - lap_t, h = lap + top_wall + 2);
   }
   // ламелі: верх і низ спадають уздовж дуги, як стеля паза (гвинтова поверхня того ж кроку)
   for (i = [0:bay_n - 1]) rotate(i * 360 / bay_n) {
