@@ -142,6 +142,10 @@ bush_hole  = 7.2;
 /* [Дімер: lamp-0.1.1 × 0.7; товщина 2.5 і хвостовик — без масштабу] */
 dim_r    = 66.5 * S;
 dim_z    = [sz(250.19) - 2.5, sz(250.19)];
+grip_n   = 4;     // планок-хрестом на верхній грані дімера
+grip_w   = 3;     // ширина планки біля основи
+grip_h   = 1.0;   // висота над диском
+grip_gap = 5;     // відступ планки від центру і від краю
 boss     = [9, dim_z[0] - 10];   // хвостовик: радіус, низ
 shaft_d  = 6.0;               // рифлений вал — заміряти
 shaft_press = 0.1;            // натяг
@@ -621,6 +625,10 @@ module dimmer() {
     union() {
       translate([0, 0, dim_z[0]]) cylinder(r = dim_r, h = dim_z[1] - dim_z[0]);
       translate([0, 0, boss[1]]) cylinder(r = boss[0], h = dim_z[0] - boss[1] + 0.01);
+      // планки під палець хрестом: скруглені в перерізі й на кінцях (hull двох напівеліпсоїдів)
+      for (i = [0 : grip_n - 1]) rotate(i * 360 / grip_n) translate([0, 0, dim_z[1] - 0.01]) hull()
+        for (x = [grip_gap + grip_w / 2, dim_r - grip_gap - grip_w / 2]) translate([x, 0, 0])
+          intersection() { scale([grip_w / 2, grip_w / 2, grip_h + 0.01]) sphere(1, $fn = 32); translate([-5, -5, 0]) cube(10); }
     }
     translate([0, 0, boss[1] - 1]) cylinder(d = shaft_d - shaft_press, h = shaft_hole + 1, $fn = 48);
   }
