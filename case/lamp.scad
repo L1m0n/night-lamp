@@ -136,6 +136,7 @@ fit        = 0.15;         // зазор ковзання/посадки
 pot2_body  = [10, 11, 12];    // корпус разом з вимикачем: ширина, довжина, глибина (заміряно)
 pot2_bush  = 5;               // довжина втулки M7 (заміряно)
 pot2_shaft = 15;              // вал від монтажної площини (заміряно)
+pot2_corner = 1.5;            // довжина кутового упору вздовж грані корпусу
 pot2_lock  = 3;               // глибина прямокутного гнізда під корпус від площини кріплення (ніжки мають бути нижче)
 bush_top   = 165.44;          // верх втулки
 bush_hole  = 7.2;
@@ -591,7 +592,15 @@ module knob_v2_cap() {  // гільза в колоні: стоїть на по�
   difference() {
     translate([0, 0, node_z0]) cylinder(d = col_bore - 2 * fit, h = pot2_face + 2 - node_z0);
     translate([0, 0, node_z0 - 1]) cylinder(d = col_bore - 2 * fit - 2 * guide_wall, h = pot2_face - pot2_lock - node_z0 + 1);  // під корпус і дроти
-    translate([-pot2_body.x / 2 - fit, -pot2_body.y / 2 - fit, pot2_face - pot2_lock - 0.01]) cube([pot2_body.x + 2 * fit, pot2_body.y + 2 * fit, pot2_lock + 0.01]);  // гніздо: корпус не провертається
+    // гніздо: корпус тримають лише 4 кутові упори, середини граней відкриті під ніжки
+    rotate(22.5) translate([0, 0, pot2_face - pot2_lock - 0.01]) intersection() {  // поворот як у key_slot: паз ключа виходить у відкриту грань, а не в упор
+      cylinder(d = col_bore - 2 * fit - 2 * guide_wall, h = pot2_lock + 0.01);
+      union() {
+        translate([-pot2_body.x / 2 - fit, -pot2_body.y / 2 - fit, 0]) cube([pot2_body.x + 2 * fit, pot2_body.y + 2 * fit, pot2_lock + 0.01]);
+        translate([-(pot2_body.x - 2 * pot2_corner) / 2, -20, 0]) cube([pot2_body.x - 2 * pot2_corner, 40, pot2_lock + 0.01]);
+        translate([-20, -(pot2_body.y - 2 * pot2_corner) / 2, 0]) cube([40, pot2_body.y - 2 * pot2_corner, pot2_lock + 0.01]);
+      }
+    }
     translate([0, 0, pot2_face - 1]) cylinder(d = bush_hole, h = 10, $fn = 48);
     key_slot();
   }
@@ -653,7 +662,7 @@ module pot_v1() {
 }
 
 module pot_v2() {
-  translate([-pot2_body.x / 2, -pot2_body.y / 2, pot2_face - pot2_body.z]) cube(pot2_body);
+  rotate(22.5) translate([-pot2_body.x / 2, -pot2_body.y / 2, pot2_face - pot2_body.z]) cube(pot2_body);  // як гніздо в knob_v2_cap
   translate([0, 0, pot2_face]) cylinder(d = 7, h = pot2_bush);
   translate([0, 0, pot2_face]) cylinder(d = shaft_d, h = pot2_shaft);
 }
