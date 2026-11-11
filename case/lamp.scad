@@ -136,6 +136,7 @@ fit        = 0.15;         // зазор ковзання/посадки
 pot2_body  = [10, 11, 12];    // корпус разом з вимикачем: ширина, довжина, глибина (заміряно)
 pot2_bush  = 5;               // довжина втулки M7 (заміряно)
 pot2_shaft = 15;              // вал від монтажної площини (заміряно)
+pot2_lock  = 3;               // глибина прямокутного гнізда під корпус від площини кріплення (ніжки мають бути нижче)
 bush_top   = 165.44;          // верх втулки
 bush_hole  = 7.2;
 
@@ -589,7 +590,8 @@ module key_slot() { rotate(22.5) translate([col_bore / 2 - key[0] - fit - 0.5, -
 module knob_v2_cap() {  // гільза в колоні: стоїть на поличках, RK097NS — гайкою на верхній стінці, корпус звисає всередину
   difference() {
     translate([0, 0, node_z0]) cylinder(d = col_bore - 2 * fit, h = pot2_face + 2 - node_z0);
-    translate([0, 0, node_z0 - 1]) cylinder(d = col_bore - 2 * fit - 2 * guide_wall, h = pot2_face - node_z0 + 1);  // під корпус і дроти
+    translate([0, 0, node_z0 - 1]) cylinder(d = col_bore - 2 * fit - 2 * guide_wall, h = pot2_face - pot2_lock - node_z0 + 1);  // під корпус і дроти
+    translate([-pot2_body.x / 2 - fit, -pot2_body.y / 2 - fit, pot2_face - pot2_lock - 0.01]) cube([pot2_body.x + 2 * fit, pot2_body.y + 2 * fit, pot2_lock + 0.01]);  // гніздо: корпус не провертається
     translate([0, 0, pot2_face - 1]) cylinder(d = bush_hole, h = 10, $fn = 48);
     key_slot();
   }
