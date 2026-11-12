@@ -73,7 +73,7 @@
   }
 </style>
 </head>
-<body data-v="v1">
+<body data-v="v2">
 <main class="page">
   <nav class="nav" aria-label="Розділи">
     <a href="parts.html">Комплектуючі</a>
@@ -89,8 +89,8 @@
 
   <div class="bar">
     <div class="toggle" role="radiogroup" aria-label="Варіант">
-      <label><input type="radio" name="variant" value="v1" checked><span>V1</span></label>
-      <label><input type="radio" name="variant" value="v2"><span>V2</span></label>
+      <label><input type="radio" name="variant" value="v1"><span>V1</span></label>
+      <label><input type="radio" name="variant" value="v2" checked><span>V2</span></label>
     </div>
     <p style="margin:0;font-size:13px;color:var(--muted)">
       <span data-variant="v1">V1 — B100K і кнопка KFC-003A у дімері</span>
@@ -397,7 +397,7 @@
       : 'перевірено: ' + res.pins + ' пінів у ' + res.nets + ' мережах збігаються з LAMP_NETS, ' + k + ' з’єднань';
   }
 
-  var KEY = 'lamp-variant', v0 = 'v1';
+  var KEY = 'lamp-variant', v0 = 'v2';
   try { var s = localStorage.getItem(KEY); if (s === 'v1' || s === 'v2') v0 = s; } catch (e) {}
   document.querySelectorAll('input[name="variant"]').forEach(function (el) {
     el.checked = el.value === v0;
